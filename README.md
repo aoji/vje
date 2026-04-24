@@ -5,12 +5,13 @@ A minimal reference implementation of **Variational Joint Embedding (VJE)** (Oji
 ## Citation
 
 ```bibtex
-@article{oji2026vje,
-  title   = {Joint Embedding Variational Bayes},
-  author  = {Oji, Amin and Fieguth, Paul},
-  journal = {Transactions on Machine Learning Research},
-  year    = {2026},
-  url     = {https://openreview.net/forum?id=4cbPJ5jLtr}
+@article{oji2026joint,
+  title={Joint Embedding Variational Bayes},
+  author={Amin Oji and Paul W. Fieguth},
+  journal={Transactions on Machine Learning Research},
+  issn={2835-8856},
+  year={2026},
+  url={https://openreview.net/forum?id=4cbPJ5jLtr},
 }
 ```
 
