@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Joint Embedding Variational Bayes: an interactive introduction</title>
+<meta name="description" content="An interactive, from-fundamentals introduction to Variational Joint Embedding (VJE) by Oji & Fieguth (TMLR 2026), with the directional likelihood derived and visualized step by step.">
+<meta name="author" content="Oji & Fieguth">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Joint Embedding Variational Bayes: an interactive introduction">
+<meta property="og:description" content="From-fundamentals walkthrough of VJE, with the directional likelihood (log-map, Schur complement, exponential-map Jacobian) shown step by step.">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cousine:ital,wght@0,400;0,700;1,400&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFDF8;           /* warm white page */
+    --ink:#1D1C19;
+    --ink-soft:#46433D;
+    --ink-faint:#746F66;
+    --rule:#1E293B;
+    --rule-soft:#E5DED2;       /* warm hairline */
+    --accent:#536F72;          /* muted petroleum: links + structure */
+    --accent-2:#9C725D;        /* muted clay: secondary reference */
+    --plate:#F8F6F2;           /* slightly lighter warm neutral figure/caption card */
+    --plate-rule:#E7DFD4;
+    --serif:"Tinos","Times New Roman",Times,serif;
+    --mono:"Cousine","Courier New",monospace;
+    --measure:45rem;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--paper);
+    color:var(--ink);
+    font-family:var(--serif);font-size:18px;line-height:1.5;font-weight:400;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:var(--measure);margin:0 auto;padding:0 1.5rem}
+  ::selection{background:rgba(83,111,114,.14)}
+
+  /* masthead: TMLR first-page feel: centered title, authors, venue */
+  header.mast{max-width:var(--measure);margin:0 auto;padding:3.4rem 1.5rem 0;text-align:center}
+  .venue{font-style:italic;font-size:.95rem;color:#46433D;margin:0 0 1.5rem}
+  h1.title{font-family:var(--serif);font-weight:700;font-size:clamp(1.95rem,4.5vw,2.5rem);line-height:1.16;letter-spacing:0;margin:0;color:var(--ink)}
+  .authors{font-size:1.18rem;margin:1.1rem 0 .15rem;color:var(--ink)}
+  .affil{font-style:italic;font-size:1rem;color:#59554D;margin:0}
+  .mast-meta{font-size:.95rem;color:var(--ink-soft);margin:.7rem 0 0}
+  .mast-meta a{color:var(--accent);text-decoration:none}
+  .mast-meta a:hover{text-decoration:underline}
+  hr.mast-rule{border:none;border-top:1px solid var(--rule);max-width:var(--measure);margin:1.7rem auto 0}
+
+  main{counter-reset:sec fig}
+  section{padding:1.5rem 0 .4rem;animation:rise .55s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){section{animation:none}}
+
+  .secnum{display:none}                       /* numbering now lives in the heading */
+  h2{font-family:var(--serif);font-weight:700;font-size:1.42rem;line-height:1.22;margin:1.7rem 0 .7rem;color:var(--ink)}
+  h2::before{counter-increment:sec;content:counter(sec) "\00a0\00a0"}
+  h3{font-family:var(--serif);font-weight:700;font-size:1.16rem;margin:1.5rem 0 .5rem;color:var(--ink)}
+  h4{font-family:var(--serif);font-weight:700;font-size:1.01rem;margin:1.15rem 0 .15rem;color:var(--ink)}
+  p{margin:0 0 .95rem}
+  main p,main li{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic}
+  a{color:var(--accent)}
+  ul{margin:0 0 1rem;padding-left:1.45rem;list-style:disc}
+  ul li{margin:0 0 .4rem;padding-left:.15rem}
+  ul li::before{content:none}
+  ul li::marker{color:var(--ink)}
+  .lead{font-size:1.05rem;color:var(--ink-soft)}
+
+  .eq{margin:1.1rem 0;overflow-x:auto;overflow-y:hidden}
+  .katex-display{margin:0}
+  .katex{font-size:1.05em}
+
+  pre{background:var(--plate);color:#1D1C19;border:1px solid var(--plate-rule);border-radius:4px;padding:.9rem 1rem;overflow-x:auto;font-family:var(--mono);font-size:.84rem;line-height:1.5;margin:1.1rem 0}
+  code{font-family:var(--mono)}
+  p code,li code{background:var(--plate);padding:.05em .3em;border:1px solid var(--plate-rule);border-radius:3px;font-size:.84em;color:var(--accent)}
+
+  /* figure plate: framed like a figure on the page */
+  .figblock{margin:1.8rem 0 2rem;counter-increment:fig;background:var(--plate);border:1px solid var(--plate-rule);border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(36,35,31,.04),0 12px 32px rgba(36,35,31,.065)}
+  .plate{background:transparent;border:none;border-radius:0;padding:.85rem .85rem .6rem;box-shadow:none}
+  .plate-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:.4rem .7rem;padding:.15rem .3rem .8rem}
+  .plate-head .step{font-style:italic;font-size:.85rem;color:#746F66;border:none;border-radius:0;padding:0;letter-spacing:0;text-transform:none}
+  .plate-head .step-name{font-family:var(--serif);font-weight:700;font-size:1.05rem;color:#24231F;letter-spacing:0}
+  .plate-head .produces{font-style:italic;font-size:.9rem;color:#746F66;margin-left:auto}
+  .plate-head .produces .katex{color:#536F72;font-size:.95em}
+  svg.fig{display:block;width:100%;height:auto}
+  .controls{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem 1.1rem;padding:.75rem .3rem .2rem}
+  .pp{font-family:var(--serif);font-size:.88rem;letter-spacing:0;text-transform:none;background:var(--plate);color:#24231F;border:1px solid var(--plate-rule);border-radius:4px;padding:.4rem .85rem;cursor:pointer;transition:background .15s}
+  .pp:hover{background:var(--paper)}
+  .ctl{display:flex;align-items:center;gap:.55rem;flex:1 1 230px;min-width:200px}
+  .ctl>span:first-child{font-family:var(--serif);font-style:italic;font-size:.92rem;color:#746F66;white-space:nowrap}
+  .ctl input[type=range]{flex:1;accent-color:#536F72;cursor:pointer;height:3px}
+  .ctl input[type=range]:disabled{opacity:.55;cursor:default}
+  .ctl .val{font-family:var(--mono);font-size:.84rem;color:#46433D;min-width:4.4rem;text-align:right}
+  .cpl-ctrl{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:". tl ts tv" "pp zl zs zv";align-items:center;gap:.5rem .7rem;padding:.7rem .3rem .25rem}
+  .cpl-ctrl .cl-pp{grid-area:pp;margin:0}
+  .cpl-ctrl .cl-tl{grid-area:tl}
+  .cpl-ctrl .cl-ts{grid-area:ts}
+  .cpl-ctrl .cl-tv{grid-area:tv}
+  .cpl-ctrl .cl-zl{grid-area:zl}
+  .cpl-ctrl .cl-zs{grid-area:zs}
+  .cpl-ctrl .cl-zv{grid-area:zv}
+  .cpl-ctrl label{font-family:var(--serif);font-style:italic;font-size:.92rem;color:#746F66;white-space:nowrap}
+  .cpl-ctrl input[type=range]{width:100%;accent-color:#536F72;cursor:pointer;height:3px}
+  .cpl-ctrl input[type=range]:disabled{opacity:.55;cursor:default}
+  .cpl-ctrl .val{font-family:var(--mono);font-size:.84rem;color:#46433D;text-align:right;white-space:nowrap}
+
+  /* figure caption: TMLR figure-caption style: "Figure N." run-in, small serif */
+  .caption{background:transparent;border:none;border-top:1px solid var(--plate-rule);border-radius:0;margin-top:0;padding:.8rem .95rem .75rem;color:var(--ink-soft)}
+  .cap-label{font-weight:700;font-size:.92rem;letter-spacing:0;text-transform:none;color:var(--accent);margin-bottom:.35rem}
+  .cap-label::before{content:"Figure " counter(fig) ". ";font-weight:700}
+  .caption p{font-size:.9rem;line-height:1.5;margin:0 0 .5rem;color:var(--ink-soft);text-align:justify}
+  .caption p:last-of-type{margin-bottom:0}
+  .caption p strong{color:var(--ink)}
+  .caption .katex{color:inherit}
+
+  /* boxed display for the term-by-term loss */
+  .termmap{background:var(--plate);border:1px solid var(--plate-rule);border-radius:4px;padding:.9rem 1.05rem;margin:1.4rem 0}
+  .termmap .lbl{font-weight:700;font-style:italic;font-size:.9rem;letter-spacing:0;text-transform:none;color:var(--ink-soft);margin-bottom:.4rem}
+
+  footer{max-width:var(--measure);margin:1.5rem auto 0;padding:1.5rem 1.5rem 3.2rem;border-top:1px solid var(--rule);color:var(--ink-faint);font-size:.9rem}
+  footer a{color:var(--accent)}
+  .endrule{display:none}
+  /* numbered citations + back-matter reference list */
+  sup.cite{font-size:.66em;line-height:0;font-weight:400}
+  sup.cite a{color:var(--accent);text-decoration:none}
+  sup.cite a:hover{text-decoration:underline}
+  .reflist{list-style:none;padding-left:0;margin:.4rem 0 0;counter-reset:ref;font-size:.86rem;line-height:1.5}
+  .reflist li{counter-increment:ref;padding-left:2.3em;text-indent:-2.3em;margin:0 0 .5rem;color:var(--ink-soft)}
+  .reflist li::before{content:"[" counter(ref) "]\00a0\00a0";font-weight:700;color:var(--ink)}
+  .reflist a{color:var(--accent);text-decoration:none}
+  .reflist a:hover{text-decoration:underline}
+  .reflist .grp{font-style:italic;color:var(--ink-faint);font-size:.82rem;margin:1rem 0 .35rem}
+  .bibtex{position:relative;margin:.5rem 0 0}
+  .bibtex pre{background:var(--plate);color:#46433D;border:1px solid var(--plate-rule);border-radius:6px;padding:1rem 1.05rem;overflow-x:auto;font-family:var(--mono);font-size:.8rem;line-height:1.5;white-space:pre;margin:0}
+  .copybtn{position:absolute;top:.5rem;right:.55rem;font-family:var(--serif);font-size:.78rem;letter-spacing:0;text-transform:none;background:var(--paper);color:#46433D;border:1px solid var(--plate-rule);border-radius:4px;padding:.3rem .72rem;cursor:pointer}
+  .copybtn:hover{background:var(--plate)}
+</style>
+</head>
+<body>
+
+<!-- shared SVG defs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="arrow-white" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0.6 0.8 L 9.6 5 L 0.6 9.2 z" fill="#24231F"/></marker>
+  <marker id="arrow-muted" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0.6 0.8 L 9.6 5 L 0.6 9.2 z" fill="#746F66"/></marker>
+  <marker id="arrow-blue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0.6 0.8 L 9.6 5 L 0.6 9.2 z" fill="#536F72"/></marker>
+  <filter id="soft-glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs></svg>
+
+<header class="mast">
+  <p class="venue">Transactions on Machine Learning Research (2026)</p>
+  <h1 class="title">Joint Embedding Variational Bayes</h1>
+  <p class="authors">Amin Oji&nbsp;&nbsp;&nbsp;&nbsp;Paul Fieguth</p>
+  <p class="affil">University of Waterloo</p>
+  <p class="mast-meta">Interactive companion&nbsp;&middot;&nbsp;<a href="https://arxiv.org/abs/2602.05639">arXiv</a>&nbsp;&middot;&nbsp;<a href="https://openreview.net/forum?id=4cbPJ5jLtr">OpenReview</a>&nbsp;&middot;&nbsp;<a href="https://github.com/aoji/vje">GitHub</a></p>
+</header>
+<hr class="mast-rule">
+
+<main class="wrap">
+
+<section>
+  <h3>Notation</h3>
+  <ul>
+    <li><span>$x$: an input image; $x_1=\tau^{(1)}(x)$ and $x_2=\tau^{(2)}(x)$: two <em>views</em> of it.</span></li>
+    <li><span>$f_\theta:\mathcal X\to\mathbb R^D$: a shared encoder; $\mathbf z_i=f_\theta(x_i)$: a deterministic <em>embedding</em>.</span></li>
+    <li><span>$\hat{\mathbf z}_i=\mathbf z_i/\lVert\mathbf z_i\rVert$: its unit <em>direction</em>; $\lVert\mathbf z_i\rVert$: its <em>magnitude</em>.</span></li>
+    <li><span>$\mathbf s$: a <em>latent code</em> (the stochastic variable); $g_\phi$: the inference network.</span></li>
+    <li><span>$q_i(\mathbf s)=q_\phi(\mathbf s\mid\mathbf z_i)=\mathcal N(\boldsymbol\mu_i,\operatorname{diag}(\boldsymbol\sigma_i^2))$: the posterior derived from view $i$.</span></li>
+    <li><span>$y_j=(\hat{\mathbf z}_j,\lVert\mathbf z_j\rVert)$: the <em>observation</em> scored by the representation-space observation model.</span></li>
+  </ul>
+  <p>The embedding $\mathbf z$ and the latent code $\mathbf s$ are distinct objects throughout.</p>
+</section>
+
+<section>
+  <span class="secnum">Section 1</span>
+  <h2>Background: self-supervised learning</h2>
+  <p>Self-supervised learning (SSL) produces image representations without labels by using an image as its own supervision: two views of one image are encoded, and the model is trained so that the two representations are mutually predictable. Matching views of the same image while keeping different images apart forces the encoder to discard nuisance variation and retain semantic content.</p>
+  <p>Two families implement this idea:</p>
+  <ul>
+    <li><strong>Contrastive</strong> methods (e.g., SimCLR<sup class="cite"><a href="#ref-1">1</a></sup>, MoCo<sup class="cite"><a href="#ref-2">2</a></sup>) pull the two views of an image together and push views of different images apart. Because the setting is unsupervised, the negatives are not labelled examples; they are constructed heuristically, typically from other samples in a batch or memory queue.</li>
+    <li><strong>Non-contrastive</strong> methods use no negatives. Predictive variants (e.g., BYOL<sup class="cite"><a href="#ref-3">3</a></sup>, SimSiam<sup class="cite"><a href="#ref-4">4</a></sup>, JEPA<sup class="cite"><a href="#ref-5">5</a></sup>) predict one view's embedding from the other and prevent collapse through architectural asymmetry: a predictor on one branch with a stop-gradient or exponential-moving-average (EMA) target encoder on the other; redundancy-reduction variants (e.g., VICReg<sup class="cite"><a href="#ref-6">6</a></sup>, Barlow Twins<sup class="cite"><a href="#ref-7">7</a></sup>) instead prevent collapse with loss terms that decorrelate features or maintain their variance.</li>
+  </ul>
+  <p>At a high level, non-contrastive methods replace labels with agreement between two views of the same input. In the predictive case this is usually written as a pointwise discrepancy between a prediction from one view and a target representation from the other,</p>
+  <div class="eq">$$\mathcal L_{\text{pred}}(x_1,x_2)=d\big(h(f_\theta(x_1)),\,f_\xi(x_2)\big),$$</div>
+  <p>where $d$ is a cosine or Euclidean distance, $h$ is a predictor, and $f_\xi$ a detached target encoder. The distance plays the role of an energy, low when the views agree. Such methods are usually called energy-based, but the term is narrower in use than in principle: a normalized density is itself an energy, namely $-\log p$, so what these objectives actually commit to is leaving the energy unnormalized. That choice, of which the Joint Embedding Predictive Architecture (JEPA<sup class="cite"><a href="#ref-5">5</a></sup>) is a prominent restatement, carries two structural consequences regardless of framing. The first is that some device is needed to rule out collapse, the constant map onto a single point, but the choice of device is heuristic, not dictated by the objective: the predictive asymmetry, the redundancy-reduction penalties, or the isotropic-Gaussian matching of LeJEPA<sup class="cite"><a href="#ref-8">8</a></sup> (SIGReg), the last argued to be principled but only relative to the loss and assumptions it adopts. The second is that each input becomes a single point, so the representation cannot express how certain that point is, a quantity that may in fact be the most valuable in label-scarce settings.</p>
+  <p>Probabilistic reformulations of SSL exist, but they usually reinterpret an existing deterministic objective rather than building the training criterion as a representation-space likelihood. VI-SimSiam<sup class="cite"><a href="#ref-9">9</a></sup>, which reads SimSiam as variational inference with a concentration on each prediction, is one such reformulation. Variational Joint Embedding (VJE) changes the objective itself: it replaces the plain distance with a latent-variable objective in representation space, derived from the spherical construction used in the paper. The model assigns a separate uncertainty to each feature, and it treats each embedding as a unit direction together with a scalar magnitude. The asymmetry that other methods add to prevent collapse is here derived rather than assumed: a likelihood conditions on an observation, that observation is fixed rather than optimized, and the stop-gradient on the target is what enforces it, so any effect on collapse is a consequence and not the reason. The devices with no first-principles role, the projection head being the obvious one, are simply absent. Aside from those, the architectural motifs are shared, so the pointwise methods are recovered as limiting cases of VJE's objective.</p>
+</section>
+
+<section>
+  <span class="secnum">Section 2</span>
+  <h2>Background: latent-variable models and the ELBO</h2>
+  <p>A latent-variable model treats each observation as generated from a hidden code $\mathbf s$ with prior $p(\mathbf s)$ and likelihood $p(\,\cdot\mid\mathbf s)$. The marginal $p(x)=\int p(x\mid\mathbf s)\,p(\mathbf s)\,d\mathbf s$ is intractable, so an approximate posterior $q_\phi(\mathbf s\mid x)$ is introduced and the evidence lower bound (ELBO) is maximized:</p>
+  <div class="eq">$$\log p(x)\;\ge\;\mathbb E_{q_\phi(\mathbf s\mid x)}\big[\log p(x\mid\mathbf s)\big]\;-\;\operatorname{KL}\!\big(q_\phi(\mathbf s\mid x)\,\Vert\,p(\mathbf s)\big).$$</div>
+  <p>The first term measures how well the latent explains the observation; the second keeps the posterior close to the prior. Two mechanical points support optimization: <strong>reparameterization</strong> lets gradients pass through sampling, $\mathbf s=\boldsymbol\mu+\boldsymbol\sigma\odot\boldsymbol\varepsilon$ with $\boldsymbol\varepsilon\sim\mathcal N(\mathbf 0,\mathbf I)$; and <strong>amortization</strong> uses one network $q_\phi$ to predict the posterior for any input.</p>
+  <p>A variational autoencoder<sup class="cite"><a href="#ref-10">10</a></sup> is one instance of this, with pixels as the observation and a decoder as $p(x\mid\mathbf s)$. VJE keeps the ELBO but changes <em>what is observed</em>: it never reconstructs the input. The observation is the other view's embedding, and three features of that choice drive everything that follows. There is no decoder and no pixel likelihood: the density lives directly in representation space, so the model never pays to generate high-entropy detail. The quantity being explained, the target embedding, must be held fixed, because a conditional likelihood cannot receive gradients through what it conditions on; this is the same detachment BYOL introduced for stability, now required by the probabilistic semantics. And the observation, though a vector in $\mathbb R^D$, is naturally a direction together with a magnitude, which a single Gaussian on the raw vector would conflate. So the one ingredient the ELBO leaves unspecified, the likelihood $p(y\mid\mathbf s)$, is exactly where VJE does its work: a normalized density on the unit sphere for the direction, a separate density for the magnitude, and the posterior's own per-feature variances reused as the likelihood's scale. Constructing that spherical density correctly, so that it stays a valid normalized density and the ELBO a genuine bound, is the substance of what follows.</p>
+</section>
+
+<section>
+  <span class="secnum">Section 3</span>
+  <h2>The VJE formulation</h2>
+  <p>VJE does not reconstruct $x$. The observation is the other view's embedding. For the conditional direction from view $i$ to view $j$:</p>
+  <ul>
+    <li>The inference network maps the context embedding to a posterior over the latent, $q_i(\mathbf s)=\mathcal N(\boldsymbol\mu_i,\operatorname{diag}(\boldsymbol\sigma_i^2))$, with $(\boldsymbol\mu_i,\boldsymbol\sigma_i^2)=g_\phi(\mathbf z_i)$.</li>
+    <li>A latent sample $\mathbf s_i$ is drawn and scored against the target observation $y_j=(\hat{\mathbf z}_j,\lVert\mathbf z_j\rVert)$ under a conditional likelihood.</li>
+    <li>The target branch is detached, by stop-gradient or by an EMA copy of the encoder.</li>
+  </ul>
+  <p>The detached target is the same operation SimSiam and BYOL use, but here it follows from the conditioning rather than being added for stability, so any stabilizing effect is a byproduct (paper Appendix B). Because either view can serve as context, VJE maximizes a <em>symmetric</em> bound, applying the construction in both directions and averaging.</p>
+
+  <div class="figblock">
+    <div class="plate">
+      <div class="plate-head">
+        <span class="step">Overview</span>
+        <span class="step-name">Model architecture</span>
+      </div>
+      <svg id="svg-arch" class="fig" viewBox="0 0 520 470" role="img" aria-label="VJE architecture: two views encoded; the online branch produces a posterior and a latent sample, the target branch a fixed observation, scored by the likelihood"></svg>
+    </div>
+    <div class="caption">
+      <div class="cap-label">Model architecture</div>
+      <p>Two augmentations of one image $x$ are passed through a shared encoder. The <em>online</em> branch maps its embedding through the inference network $g_\phi$ to a posterior $q(\mathbf s)$ and draws a latent sample $\mathbf s$; the <em>target</em> branch (stop-gradient, optionally an EMA copy) yields a fixed observation $y=(\hat{\mathbf z},\lVert\mathbf z\rVert)$. The representation-space observation model scores the target under the sample, and training minimizes the negative conditional lower-bound objective: the directional/radial NLL terms plus $\operatorname{KL}\!\big(q\,\Vert\,\mathcal N(\mathbf 0,\mathbf I)\big)$. The bound is <em>symmetric</em>: the two views swap roles and the objective is averaged. In the objective, the observation term (blue) and the KL term (orange) are highlighted.</p>
+    </div>
+  </div>
+
+  <h3>Recovering the pointwise objective</h3>
+  <p>Under an isotropic Gaussian likelihood with a single fixed variance and a posterior collapsed to a point estimate, $\log p(y_j\mid\mathbf s)$ reduces, up to constants, to the squared error between a predicted and a target embedding, i.e., the pointwise predictive loss (BYOL, SimSiam, JEPA). Non-contrastive prediction is therefore the fixed-variance, point-estimate special case of VJE; the full model generalizes it with a normalized, heavy-tailed likelihood, a learned per-feature variance, and a KL term. There is also no projection head: the posterior and observation model are both defined in the encoder's embedding space, since a separate projection space would have a geometry unrelated to the encoder's.</p>
+</section>
+
+<section>
+  <span class="secnum">Section 4</span>
+  <h2>The likelihood</h2>
+  <p>The likelihood $p(y_j\mid\mathbf s)$ follows from one observation about embeddings and three design choices.</p>
+  <h4>The structure of an embedding.</h4>
+  <p>A vector $\mathbf z\in\mathbb R^D$ carries a direction and a magnitude. A single Gaussian on $\mathbf z$ couples the two and is sensitive to changes in the embedding norm, so VJE models angular agreement and magnitude agreement as separate factors, each with its own scale.</p>
+  <h4>Direction and magnitude decomposition.</h4>
+  <p>The observation is written as a direction and a length, $y=(\hat{\mathbf z},\lVert\mathbf z\rVert)$, and the likelihood is factored into a directional term on the unit sphere $\mathbb S^{D-1}$ and a one-dimensional radial term. The latent is decomposed the same way, giving the radial residual $\Delta r_{ij}=\lVert\mathbf z_j\rVert-\lVert\mathbf s_i\rVert$.</p>
+  <div class="figblock">
+    <div class="plate">
+      <div class="plate-head">
+        <span class="step">Why split the likelihood?</span>
+        <span class="step-name">Direction-norm coupling</span>
+      </div>
+      <svg id="svg-couple" class="fig" viewBox="0 0 520 420" role="img" aria-label="A comparison between raw Euclidean matching, which couples angle and norm, and the VJE factorization, which scores direction and magnitude separately"></svg>
+      <div class="cpl-ctrl">
+        <label class="cl-tl" for="sl-couple-theta">angle&nbsp;$\theta$</label>
+        <input class="cl-ts" id="sl-couple-theta" type="range" min="0.20" max="1.65" step="0.01" value="0.95" disabled>
+        <span class="val cl-tv" id="rd-couple-theta">θ = 0.95 rad</span>
+        <button class="pp cl-pp" id="pp-couple">Pause</button>
+        <label class="cl-zl" for="sl-couple-rz">target norm&nbsp;$\lVert\mathbf z\rVert$</label>
+        <input class="cl-zs" id="sl-couple-rz" type="range" min="0.65" max="2.65" step="0.01" value="2.20" disabled>
+        <span class="val cl-zv" id="rd-couple-rz">‖z‖ = 2.20</span>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="cap-label">Direction-norm coupling</div>
+      <p><strong>Shown.</strong> The same vector mismatch is scored two ways, with the predicted norm fixed at $\lVert\mathbf s\rVert=1$ and the sliders setting the angular mismatch $\theta$ and the target norm $\lVert\mathbf z\rVert$. <em>Left,</em> the raw squared distance $\lVert\mathbf z-\mathbf s\rVert^2$, the single quantity a Euclidean loss minimizes: $\mathbf s$ is the fixed reference, $\mathbf z$ swings by $\theta$ and grows with $\lVert\mathbf z\rVert$, and the chord between the tips is what is penalized. <em>Middle and right,</em> the VJE factorization scores the same mismatch as a directional term on the unit sphere, set by $\theta$ alone, and a radial term, set by $\Delta r=\lVert\mathbf z\rVert-\lVert\mathbf s\rVert$ alone. The bars share one scale, so it is their relative sizes, not the absolute numbers, that matter.</p>
+      <p><strong>Why it matters.</strong> The raw squared error expands as $\lVert\mathbf z-\mathbf s\rVert^2=(\Delta r)^2+2\lVert\mathbf z\rVert\lVert\mathbf s\rVert(1-\cos\theta)$: a single scalar whose angular term is scaled by the norm. Direction and magnitude may carry different semantics, so scoring them under one scale and optimizing jointly can lead to pathologies: the score gives no way to weight the two separately, and the norm-scaling couples their gradients, so the optimizer cannot reduce angular and radial disagreement independently. Progress on one can then come at the expense of the other, and neither is adequately optimized. The problem grows with dimension: the radial residual is one coordinate while direction spans the remaining $D-1$, so a single isotropic scale is applied to both.</p>
+    </div>
+  </div>
+
+  <h4>Heavy tails.</h4>
+  <p>Both factors are Student-$t$ distributions sharing a degrees-of-freedom parameter $\nu&gt;0$. Heavy tails make the objective robust to hard or noisy pairs: large angular errors do not dominate training as they would under a Gaussian. As $\nu\to\infty$ the Student-$t$ approaches a Gaussian, so this is a strict generalization with one tunable parameter.</p>
+  <div class="figblock">
+    <div class="plate">
+      <div class="plate-head">
+        <span class="step">Tail weight</span>
+        <span class="step-name">Degrees of freedom $\nu$</span>
+      </div>
+      <svg id="svg-tdf" class="fig" viewBox="0 0 520 420" role="img" aria-label="Student-t density and the gradient of its negative log-likelihood as the degrees of freedom sweep from Cauchy to the Gaussian limit"></svg>
+      <div class="controls">
+        <button class="pp" id="pp-tdf">Pause</button>
+        <label class="ctl"><span>degrees of freedom&nbsp;$\nu$</span><input id="sl-tdf" type="range" min="1" max="100" step="1" value="28" disabled><span class="val" id="rd-tdf">&#957; = 28</span></label>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="cap-label">Degrees of freedom $\nu$</div>
+      <p><strong>Shown.</strong> The shared Student-$t$ factor as a function of the residual, at the current degrees of freedom $\nu$ (slider, integer; $\nu=100$ is drawn as the Gaussian limit). <em>Left,</em> the density against a Gaussian of the same scale (dashed): small $\nu$ has a lower peak and heavier tails, and the two coincide as $\nu\to\infty$. <em>Right,</em> the gradient of the negative log-likelihood, $\partial_r\,\mathrm{NLL}=(\nu+1)\,r/(\nu+r^2)$ (blue), the quantity that drives the update, against the Gaussian gradient $r$ (dashed).</p>
+      <p><strong>Why it matters.</strong> The Gaussian gradient grows without bound, so a single large residual dominates the step. The Student-$t$ gradient rises, peaks near $r=\sqrt{\nu}$, then redescends toward zero, automatically down-weighting hard or mislabelled pairs. Both the directional and radial factors share this one $\nu$, the single knob trading robustness ($\nu\!\to\!1$, the Cauchy limit) against Gaussian behaviour ($\nu\!\to\!\infty$).</p>
+    </div>
+  </div>
+  <h4>Variance sharing.</h4>
+  <p>The inference network $g_\phi$ produces a single variance vector $\boldsymbol\sigma_i^2$ that the model uses in two roles. As the posterior covariance $\operatorname{diag}(\boldsymbol\sigma_i^2)$ it is how unsure the inference is about the latent; as the likelihood scale $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ it is how tightly the target direction must be matched. Sharing the same vector across both is what turns it into uncertainty rather than a free scale: a feature the network is unsure of (large $\sigma^2$) both widens the posterior and loosens the match, so disagreement there is penalized less, while a confident feature tightens both. Were the likelihood given its own separate scale, the two could drift apart and the inferred spread would bear no necessary relation to the penalty actually applied. The scale is per-dimension, so the uncertainty is anisotropic, and it is read directly from $g_\phi$ rather than from any auxiliary output.</p>
+
+  <h3>The directional term</h3>
+  <p>The directional factor is a probability density over a point on the unit sphere, namely the target direction $\hat{\mathbf z}_j$. For the symmetric ELBO to be a genuine lower bound, this factor must be a normalized density on the sphere<sup class="cite"><a href="#ref-11">11</a></sup>: it must integrate to one over $\mathbb S^{D-1}$. Two facts make that nontrivial. First, the standard distributions for continuous data are defined on flat Euclidean space $\mathbb R^k$, not on a curved surface. Second, a unit vector in $\mathbb R^D$ has only $D-1$ independent degrees of freedom because of the constraint $\lVert\hat{\mathbf z}\rVert=1$. The construction therefore moves the comparison into a flat space where a Student-$t$ is well defined<sup class="cite"><a href="#ref-12">12</a></sup>, then transports the resulting density back onto the sphere correctly. The three steps below, each interactive, carry this out.</p>
+  <p><strong>Directions, geodesics, and the tangent space.</strong> The natural measure of disagreement between two directions is the <em>angle</em> between them, the length of the shortest arc along the sphere (the geodesic distance<sup class="cite"><a href="#ref-13">13</a></sup>), not the straight-line chord. For a predicted direction $\hat{\mathbf s}$ and a target $\hat{\mathbf z}$, this angle is $\theta=\arccos(\hat{\mathbf s}^\top\hat{\mathbf z})\in[0,\pi]$. At $\hat{\mathbf s}$, the <em>tangent space</em> is the flat hyperplane of vectors orthogonal to $\hat{\mathbf s}$, the local linear approximation of the sphere. Its dimension is $k=D-1$.</p>
+
+  <h4>Step 1: the geodesic log-map (flattening the disagreement).</h4>
+  <p>The logarithmic map at $\hat{\mathbf s}$ sends the target direction to a tangent vector that points from $\hat{\mathbf s}$ toward $\hat{\mathbf z}$ along the sphere and whose length equals the angle between them:</p>
+  <div class="eq">$$\mathbf u=\log_{\hat{\mathbf s}}(\hat{\mathbf z})=\theta\,\frac{(\mathbf I-\hat{\mathbf s}\hat{\mathbf s}^\top)\,\hat{\mathbf z}}{\big\lVert(\mathbf I-\hat{\mathbf s}\hat{\mathbf s}^\top)\,\hat{\mathbf z}\big\rVert},\qquad \lVert\mathbf u\rVert=\theta.$$</div>
+  <p>The projection $(\mathbf I-\hat{\mathbf s}\hat{\mathbf s}^\top)\hat{\mathbf z}$ removes the component along $\hat{\mathbf s}$, leaving the part of $\hat{\mathbf z}$ in the tangent plane; normalizing and scaling by $\theta$ gives a flat vector whose magnitude is the angular error. The inverse, the exponential map, returns it to the sphere: $\exp_{\hat{\mathbf s}}(\mathbf u)=\cos\lVert\mathbf u\rVert\,\hat{\mathbf s}+\sin\lVert\mathbf u\rVert\,\mathbf u/\lVert\mathbf u\rVert$.</p>
+
+  <div class="figblock">
+    <div class="plate">
+      <div class="plate-head">
+        <span class="step">Step 1</span>
+        <span class="step-name">Geodesic log map</span>
+        <span class="produces">produces the residual&nbsp;$\mathbf u$</span>
+      </div>
+      <svg id="svg-log" class="fig" viewBox="0 0 520 420" role="img" aria-label="Geodesic log map: angle theta unrolled to tangent vector u"></svg>
+      <div class="controls">
+        <button class="pp" id="pp-log">Pause</button>
+        <label class="ctl"><span>angular separation&nbsp;θ</span><input id="sl-log" type="range" min="0.25" max="2.25" step="0.01" value="1.05" disabled><span class="val" id="rd-log">1.05 rad</span></label>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="cap-label">Geodesic log map</div>
+      <p><strong>Shown.</strong> The predicted mean direction $\hat{\mathbf s}$ and target $\hat{\mathbf z}$ on the sphere (cross-section). The blue arrow is $\mathbf u=\log_{\hat{\mathbf s}}(\hat{\mathbf z})$, the geodesic arc unrolled into the tangent plane, drawn at the same scale as the arc so $\lVert\mathbf u\rVert=\theta$. The slider is $\theta=\arccos(\hat{\mathbf s}^\top\hat{\mathbf z})$; the faint dashed lines carry intermediate points of the arc onto the tangent line, the unrolling that defines $\mathbf u$.</p>
+      <p><strong>Where it enters $\ell_{\text{dir}}$.</strong> $\mathbf u$ is the directional residual. It is squared in the Mahalanobis form $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u$, which is the argument of the first term of $\ell_{\text{dir}}$, $\tfrac{\nu+k}{2}\log(1+Q_{\text{dir}}/\nu)$. Larger $\theta$ lengthens $\mathbf u$ and raises $Q_{\text{dir}}$, but the directional NLL grows only logarithmically, because the factor is Student-$t$, not Gaussian.</p>
+    </div>
+  </div>
+
+  <h4>Step 2: the tangent-space scale (a Schur-complement restriction).</h4>
+  <p>A Student-$t$ also needs a scale matrix, and it must live in the tangent space. The model supplies $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ in the full $D$-dimensional embedding space, but the tangent space is the $(D-1)$-dimensional hyperplane orthogonal to $\hat{\mathbf s}$. The remaining direction, along $\hat{\mathbf s}$, is the radial (magnitude) direction, which is handled by the radial term rather than the directional scale. Writing $\Sigma$ in a radial ($r$) / tangent ($t$) frame with blocks $\Sigma_{tt}$, $\Sigma_{rr}$, and cross-block $\Sigma_{tr}$, the tangent covariance after conditioning on the radial coordinate is the Schur complement<sup class="cite"><a href="#ref-14">14</a></sup></p>
+  <div class="eq">$$\Sigma_{\text{tan}}=\Sigma_{tt}-\Sigma_{tr}\,\Sigma_{rr}^{-1}\,\Sigma_{tr}^{\top}.$$</div>
+  <p>The radial direction is one-dimensional, so $\Sigma_{rr}$ is a scalar and the Schur complement subtracts a rank-one correction from $\Sigma_{tt}$. Simply deleting the radial row and column is not enough because $\hat{\mathbf s}$ is generally not axis-aligned: in the radial-tangent frame, the diagonal $\Sigma$ can have cross terms $\Sigma_{tr}$. The covariance-weighted angular error is then $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u$, anisotropic because $\Sigma_{\text{tan}}$ is built from the per-feature variances.</p>
+
+  <div class="figblock">
+    <div class="plate">
+      <div class="plate-head">
+        <span class="step">Step 2</span>
+        <span class="step-name">Schur complement</span>
+        <span class="produces">produces the scale&nbsp;$\Sigma_{\mathrm{tan}}$</span>
+      </div>
+      <svg id="svg-schur" class="fig" viewBox="0 0 520 420" role="img" aria-label="Schur complement: conditional vs marginal tangent width"></svg>
+      <div class="controls">
+        <button class="pp" id="pp-schur">Pause</button>
+        <label class="ctl"><span>radial-tangent coupling&nbsp;ρ</span><input id="sl-schur" type="range" min="0" max="0.9" step="0.01" value="0.62" disabled><span class="val" id="rd-schur">ρ = 0.62</span></label>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="cap-label">Schur complement</div>
+      <p><strong>Shown.</strong> How the directional scale $\Sigma_{\text{tan}}$ is obtained from the embedding covariance. The plot is a 2D slice: the horizontal axis $t$ stands for the tangent (directional) space, the vertical axis $r$ for the single radial direction, and the ellipse is their joint covariance, with tilt controlled by the coupling $\rho$ (slider). Two tangent spreads are marked. <em>Marginal</em> (dashed verticals and the bracket below) is the full horizontal extent: the spread of $t$ when $r$ is ignored, equal to $\sigma_t$. <em>Conditional</em> (the blue chord on the axis) is the horizontal width of the slice at $r=0$: the spread of $t$ once $r$ is fixed, equal to $\sigma_t\sqrt{1-\rho^2}$. Conditioning corresponds to slicing the ellipse at $r=0$; marginalizing corresponds to projecting it onto the $t$ axis. When the ellipse is tilted, the slice is narrower than the projection.</p>
+      <p><strong>Where it enters $\ell_{\text{dir}}$.</strong> $\Sigma_{\text{tan}}$, the conditional spread, is the scale of the <em>directional</em> likelihood: it weights the angular error in $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u$ and sets the normalizer $\tfrac12\log\lvert\Sigma_{\text{tan}}\rvert$<sup class="cite"><a href="#ref-14">14</a></sup>. Built from the per-feature variances, it is anisotropic across the tangent space. Conditioning on the radial coordinate keeps this scale purely directional: spread along $\hat{\mathbf s}$ is magnitude uncertainty, already scored by $\ell_{\text{rad}}$, so the marginal width would double-count it. At $\rho=0$ the ellipse is upright, slice and projection coincide, and $\Sigma_{\text{tan}}=\Sigma_{tt}$.</p>
+    </div>
+  </div>
+
+  <h4>Step 3: the exponential-map Jacobian (a valid density on the sphere).</h4>
+  <p>A Student-$t$ is now defined on $\mathbf u$, but the observed quantity is the direction $\hat{\mathbf z}$ on the sphere. A density transforms under a change of variables by the determinant of the map's Jacobian, and the exponential map (tangent vector $\to$ sphere point) is nonlinear, so its Jacobian is not one and depends on the angle. For the unit sphere,</p>
+  <div class="eq">$$\lvert J_{\exp}\rvert=\Big(\frac{\sin\theta}{\theta}\Big)^{D-2},\qquad \log\lvert J_{\exp}\rvert=(D-2)\,\log\frac{\sin\theta}{\theta}.$$</div>
+  <p>Equal areas on the flat tangent plane do not map to equal areas on the sphere; the mismatch grows with the angle. Without this factor the directional density would not integrate to one over the sphere, the conditional likelihood would be ill-defined, and the symmetric ELBO would no longer be a valid lower bound.</p>
+
+  <div class="figblock">
+    <div class="plate">
+      <div class="plate-head">
+        <span class="step">Step 3</span>
+        <span class="step-name">Exponential-map Jacobian</span>
+        <span class="produces">produces&nbsp;$\log\lvert J_{\exp}\rvert$</span>
+      </div>
+      <svg id="svg-jac" class="fig" viewBox="0 0 520 420" role="img" aria-label="Exponential map area distortion"></svg>
+      <div class="controls">
+        <button class="pp" id="pp-jac">Pause</button>
+        <label class="ctl"><span>angle&nbsp;θ</span><input id="sl-jac-theta" type="range" min="0.25" max="2.25" step="0.01" value="1.05" disabled><span class="val" id="rd-jac-theta">1.05 rad</span></label>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="cap-label">Exponential-map Jacobian</div>
+      <p><strong>Shown</strong> (for $D=3$, so the sphere is the ordinary $\mathbb S^2$). The flat disc has radius $\theta$. Its image on the sphere is a cap whose <em>geodesic</em> radius, the white arc from the pole to the rim, is still $\theta$: distance along the surface is preserved. But that rim sits at <em>Euclidean</em> radius $\sin\theta$ from the axis (blue), so its circumference contracts from $2\pi\theta$ to $2\pi\sin\theta$. The radial direction keeps its length while the circumferential direction shrinks by $\sin\theta/\theta$, so each area element shrinks by that same factor, which is why $\lvert J_{\exp}\rvert=\sin\theta/\theta$ here.</p>
+      <p><strong>Where it enters $\ell_{\text{dir}}$.</strong> $\log\lvert J_{\exp}\rvert$ is the third term, the change of variables that turns the flat Student-$t$ on $\mathbf u$ into a normalized density on the sphere. Since $\sin\theta/\theta&lt;1$ the term is negative (it lowers the NLL) and grows with $\theta$. For general $D$ the picture is identical; only the exponent changes, $\lvert J_{\exp}\rvert=(\sin\theta/\theta)^{D-2}$.</p>
+    </div>
+  </div>
+
+  <h4>Assembling the term.</h4>
+  <p>The negative logarithm of the tangent-space Student-$t$ supplies the first two terms; the change of variables onto the sphere supplies $\log\lvert J_{\exp}\rvert$. Dropping constants in $\nu$ and $k$ gives the directional negative log-likelihood (paper Eq. 5), with each term traceable to a step above:</p>
+  <div class="termmap">
+    <div class="lbl">ℓ_dir, term by term</div>
+    <div class="eq">$$\ell_{\text{dir}}=\underbrace{\tfrac{\nu+k}{2}\,\log\!\Big(1+\tfrac{Q_{\text{dir}}}{\nu}\Big)}_{\text{angular error $\cdot$ Steps 1 and 2}}\;+\;\underbrace{\tfrac12\log\lvert\Sigma_{\text{tan}}\rvert}_{\text{scale $\cdot$ Step 2}}\;+\;\underbrace{\log\lvert J_{\exp}\rvert}_{\text{curvature $\cdot$ Step 3}},\qquad k=D-1.$$</div>
+  </div>
+  <p>The radial term $\ell_{\text{rad}}$ is a one-dimensional Student-$t$ negative log-likelihood on $\Delta r_{ij}$, which maintains magnitude consistency without the norm influencing the directional term.</p>
+
+  <h3>The full objective</h3>
+  <p>The negative log-likelihood, symmetrized over both directions (paper Eq. 4), is</p>
+  <div class="eq">$$\mathcal L_{\text{NLL}}=\tfrac12\!\!\sum_{(i,j)\in\{(1,2),(2,1)\}}\!\!\mathbb E_{\mathbf s_i\sim q_i}\Big[\ell_{\text{dir}}\big(\operatorname{sg}(\hat{\mathbf z}_j),\hat{\mathbf s}_i;\boldsymbol\sigma_i^2\big)+\ell_{\text{rad}}\big(\Delta r_{ij}\big)\Big],$$</div>
+  <p>where $\operatorname{sg}(\cdot)$ is the stop-gradient that fixes the observation the likelihood conditions on. The complete objective adds a KL term toward the standard-normal prior $p(\mathbf s)=\mathcal N(\mathbf 0,\mathbf I)$, which regularizes the posterior and fixes the latent geometry around a common origin and scale:</p>
+  <div class="eq">$$\mathcal L=\mathcal L_{\text{NLL}}+\beta\,\mathcal L_{\text{KL}},\qquad \mathcal L_{\text{KL}}=\tfrac12\!\sum_{i}\operatorname{KL}\!\big(q_i\,\Vert\,p(\mathbf s)\big),$$</div>
+  <p>using the closed-form diagonal-Gaussian KL. Minimizing $\mathcal L$ is equivalent to maximizing the paper's $\beta$-weighted symmetric conditional lower-bound objective with the directional factor defined above.</p>
+</section>
+
+<section>
+  <span class="secnum">Section 5</span>
+  <h2>Training</h2>
+  <p>During training, sampling is essential. Variance centering and the EMA target are optional refinements: variance centering is numerical, while EMA usually improves downstream representation quality.</p>
+  <ul>
+    <li><strong>Sampling.</strong> The latent is drawn by reparameterization, $\mathbf s_i=\boldsymbol\mu_i+\boldsymbol\sigma_i\odot\boldsymbol\varepsilon_i$, so gradients flow through the variances. Sampling is also where posterior variance becomes operational inside the model: changing $\boldsymbol\sigma_i$ changes the latent sample that is scored, so uncertainty affects the representation path itself rather than appearing only as an auxiliary output. One sample per view suffices: with a diagonal posterior the estimator is already low-variance, and adding samples does not measurably change the result (Appendix C.2).</li>
+    <li><strong>Variance centering (optional).</strong> The directional term depends only on the relative per-feature variances, so their overall scale is a flat direction of the loss that carries no angular information. Left free it drifts, and since $\Sigma=\operatorname{diag}(\boldsymbol\sigma^2)$ enters the Mahalanobis term through its inverse, an unbounded drift drives $\boldsymbol\sigma^2$ and $\Sigma^{-1}$ toward over- or underflow, fatal in reduced precision (e.g., fp16). Fixing the geometric mean of $\boldsymbol\sigma^2$ to one (zero-mean log-variances) pins that single mode and holds the variances in a safe range without ad-hoc clipping, leaving the informative anisotropy untouched (Appendix A.2).</li>
+    <li><strong>EMA target (optional).</strong> A conditional likelihood only needs the target held fixed within each step, which stop-gradient already provides; the model trains stably with stop-gradient alone. Replacing it with an EMA target encoder, $\xi\leftarrow m\,\xi+(1-m)\,\theta$ on a cosine schedule toward $1.0$, supplies the same fixed-target semantics with a smoother, slowly moving target and tends to improve downstream results. It is a refinement, not a stability mechanism.</li>
+  </ul>
+</section>
+
+<section>
+  <span class="secnum">Section 6</span>
+  <h2>Summary</h2>
+  <p>Non-contrastive SSL minimizes an unnormalized energy, a pointwise distance between a predicted and a target embedding, with collapse held off by added architecture and each input reduced to a single point. VJE normalizes that energy: variational inference on the embeddings, a conditional ELBO whose likelihood is a heavy-tailed Student-$t$ split into a normalized directional factor on the sphere and a radial factor, with one per-feature variance vector shared between posterior and likelihood. The pointwise methods are recovered in its fixed-variance, point-estimate limit. The asymmetry they add to prevent collapse VJE instead derives from the likelihood's need for a fixed observation; what the normalized objective adds is anisotropic, representation-space uncertainty and a density on embeddings, so likelihood-based scoring follows from the model rather than separate machinery.</p>
+</section>
+
+<section>
+  <h3>Cite</h3>
+  <div class="bibtex">
+    <button class="copybtn" id="copy-bib" type="button">Copy</button>
+    <pre id="bib-src">@article{oji2026joint,
+  title   = {Joint Embedding Variational Bayes},
+  author  = {Oji, Amin and Fieguth, Paul},
+  journal = {Transactions on Machine Learning Research},
+  issn    = {2835-8856},
+  year    = {2026},
+  url     = {https://openreview.net/forum?id=4cbPJ5jLtr},
+  note    = {arXiv:2602.05639}
+}</pre>
+  </div>
+</section>
+
+</main>
+
+<section>
+  <div class="wrap">
+  <h3>References</h3>
+  <ol class="reflist">
+    <li id="ref-1">T. Chen, S. Kornblith, M. Norouzi, and G. Hinton. A simple framework for contrastive learning of visual representations. <em>ICML</em>, 2020. <a href="https://arxiv.org/abs/2002.05709">arXiv:2002.05709</a>.</li>
+    <li id="ref-2">K. He, H. Fan, Y. Wu, S. Xie, and R. Girshick. Momentum contrast for unsupervised visual representation learning. <em>CVPR</em>, 2020. <a href="https://arxiv.org/abs/1911.05722">arXiv:1911.05722</a>.</li>
+    <li id="ref-3">J.-B. Grill et al. Bootstrap your own latent: a new approach to self-supervised learning. <em>NeurIPS</em>, 2020. <a href="https://arxiv.org/abs/2006.07733">arXiv:2006.07733</a>.</li>
+    <li id="ref-4">X. Chen and K. He. Exploring simple Siamese representation learning. <em>CVPR</em>, 2021. <a href="https://arxiv.org/abs/2011.10566">arXiv:2011.10566</a>.</li>
+    <li id="ref-5">Y. LeCun. A path towards autonomous machine intelligence. Position paper, 2022. <a href="https://openreview.net/forum?id=BZ5a1r-kVsf">OpenReview</a>.</li>
+    <li id="ref-6">A. Bardes, J. Ponce, and Y. LeCun. VICReg: variance-invariance-covariance regularization for self-supervised learning. <em>ICLR</em>, 2022. <a href="https://openreview.net/forum?id=xm6YD62D1Ub">OpenReview</a>.</li>
+    <li id="ref-7">J. Zbontar, L. Jing, I. Misra, Y. LeCun, and S. Deny. Barlow Twins: self-supervised learning via redundancy reduction. <em>ICML</em>, 2021. <a href="https://arxiv.org/abs/2103.03230">arXiv:2103.03230</a>.</li>
+    <li id="ref-8">R. Balestriero and Y. LeCun. LeJEPA: provable and scalable self-supervised learning without the heuristics. 2025. <a href="https://arxiv.org/abs/2511.08544">arXiv:2511.08544</a>.</li>
+    <li id="ref-9">H. Nakamura, M. Okada, and T. Taniguchi. Representation uncertainty in self-supervised learning as variational inference. <em>ICCV</em>, 2023. <a href="https://arxiv.org/abs/2203.11437">arXiv:2203.11437</a>.</li>
+    <li id="ref-10">D. P. Kingma and M. Welling. Auto-encoding variational Bayes. <em>ICLR</em>, 2014. <a href="https://arxiv.org/abs/1312.6114">arXiv:1312.6114</a>.</li>
+    <li id="ref-11">K. V. Mardia and P. E. Jupp. <em>Directional Statistics</em>. Wiley, 2000.</li>
+    <li id="ref-12">S. Kotz and S. Nadarajah. <em>Multivariate t-Distributions and Their Applications</em>. Cambridge University Press, 2004.</li>
+    <li id="ref-13">M. P. do Carmo. <em>Riemannian Geometry</em>. Birkh&auml;user, 1992.</li>
+    <li id="ref-14">F. Zhang. <em>The Schur Complement and Its Applications</em>. Springer, 2005.</li>
+  </ol>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script>
+// geometry helpers
+function smoothPulse(t){return 0.5-0.5*Math.cos(2*Math.PI*t);}
+function deg(d){return d*Math.PI/180;}
+function polar(cx,cy,r,a){return {x:cx+r*Math.cos(a), y:cy-r*Math.sin(a)};}
+function ext(p,a,L){return {x:p.x+L*Math.cos(a), y:p.y+L*Math.sin(a)};}
+function arcPath(cx,cy,r,a0,a1){
+  const s=polar(cx,cy,r,a0), e=polar(cx,cy,r,a1);
+  const large=Math.abs(a1-a0)>Math.PI?1:0, sweep=a1<a0?1:0;
+  return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} ${sweep} ${e.x} ${e.y}`;
+}
+function logMapTangentScreenAngle(a){return Math.PI/2-a;}
+function eig2(m){
+  const a=m[0][0],b=m[0][1],d=m[1][1];
+  const tr=a+d, det=a*d-b*b;
+  const disc=Math.sqrt(Math.max(0,tr*tr-4*det));
+  const l1=(tr+disc)/2, l2=(tr-disc)/2;
+  let vx=b, vy=l1-a;
+  if(Math.abs(vx)+Math.abs(vy)<1e-12){vx=1;vy=0;}
+  const n=Math.hypot(vx,vy);
+  return {l1,l2,vx:vx/n,vy:vy/n};
+}
+function expJac(theta,dim){
+  const th=Math.max(theta,1e-8);
+  const ratio=Math.sin(th)/th;
+  return Math.pow(Math.max(1e-12,ratio),dim-2);
+}
+function fmtSmall(v){return v<0.001? v.toExponential(1): v.toFixed(3);}
+const FT='font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif"';
+function lab(x,y,t,extra){return `<text x="${x}" y="${y}" fill="#24231F" stroke="#FFFEFA" stroke-width="1.05" paint-order="stroke" stroke-linejoin="round" font-size="18" font-weight="700" ${FT} ${extra||''}>${t}</text>`;}
+function labThin(x,y,t,extra){return `<text x="${x}" y="${y}" fill="#24231F" stroke="#FFFEFA" stroke-width="0.55" paint-order="stroke" stroke-linejoin="round" font-size="18" font-weight="700" ${FT} ${extra||''}>${t}</text>`;}
+function leg(x,y,c,t){return `<g transform="translate(${x} ${y})"><circle r="5" fill="${c}"/><text x="12" y="5" fill="#746F66" font-size="12" ${FT}>${t}</text></g>`;}
+function frame(){return `<rect x="0" y="0" width="520" height="420" rx="28" fill="#F8F6F2"/>`;}
+
+function buildArch(){
+  const INK='#24231F', MUT='#746F66', SUBT='#7D776E', LINE='#D2C8BA', FILL='#FAF9F6',
+        ACC='#536F72', ACCINK='#425D60', ACCF='rgba(83,111,114,0.09)', ACCSS='rgba(83,111,114,0.10)', LOSSF='#FAF9F6',
+        ACC2='#9C725D', ACC2INK='#7E5749', ACC2F='rgba(156,114,93,0.12)';
+  const sub=(t)=>`<tspan baseline-shift="sub" font-size="8">${t}</tspan>`;
+  const txt=(x,y,t,f,sz,w,anc)=>`<text x="${x}" y="${y}" fill="${f}" font-size="${sz}" ${w?'font-weight="'+w+'"':''} text-anchor="${anc||'middle'}" ${FT}>${t}</text>`;
+  // nodes
+  const X={cx:260,cy:46,r:17}, ENC1={cx:152,cy:118,w:140,h:46}, ENC2={cx:368,cy:118,w:140,h:46},
+        INF={cx:152,cy:194,w:140,h:46}, Q={cx:152,cy:270,rx:94,ry:22},
+        Y={cx:368,cy:250,r:23}, SS={cx:246,cy:334,r:13}, LIK={cx:366,cy:334,rx:90,ry:28},
+        PRIOR={cx:70,cy:334,rx:52,ry:19}, KL={cx:152,cy:400,w:52,h:30}, LOSS={cx:290,cy:452,w:384,h:34};
+  const uu=(ax,ay,bx,by)=>{const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy)||1;return [dx/L,dy/L];};
+  const edge=(N,tx,ty)=>{const d=uu(N.cx,N.cy,tx,ty),dx=d[0],dy=d[1];
+    if(N.r!=null) return [N.cx+N.r*dx,N.cy+N.r*dy];
+    if(N.rx!=null){const t=1/Math.hypot(dx/N.rx,dy/N.ry);return [N.cx+t*dx,N.cy+t*dy];}
+    const tX=Math.abs(dx)<1e-6?1e9:(N.w/2)/Math.abs(dx), tY=Math.abs(dy)<1e-6?1e9:(N.h/2)/Math.abs(dy), t=Math.min(tX,tY);
+    return [N.cx+t*dx,N.cy+t*dy];};
+  // shapes
+  const net=(N,a,b)=>`<rect x="${N.cx-N.w/2}" y="${N.cy-N.h/2}" width="${N.w}" height="${N.h}" rx="9" fill="${FILL}" stroke="${LINE}" stroke-width="1.3"/>`+txt(N.cx,N.cy-3,a,INK,11.5,600)+txt(N.cx,N.cy+14,b,SUBT,10);
+  const ellD=(N,t)=>`<ellipse cx="${N.cx}" cy="${N.cy}" rx="${N.rx}" ry="${N.ry}" fill="${FILL}" stroke="${LINE}" stroke-width="1.3" stroke-dasharray="3 3.5"/>`+txt(N.cx,N.cy+4,t,INK,11);
+  const ellB=(N,t)=>`<ellipse cx="${N.cx}" cy="${N.cy}" rx="${N.rx}" ry="${N.ry}" fill="${ACCF}" stroke="${ACC}" stroke-width="1.6"/>`+txt(N.cx,N.cy+4,t,ACCINK,11.5,700);
+  const cV=(N,t)=>`<circle cx="${N.cx}" cy="${N.cy}" r="${N.r}" fill="${FILL}" stroke="${LINE}" stroke-width="1.3"/>`+txt(N.cx,N.cy+4.5,t,INK,12,700);
+  const cS=(N,t)=>`<circle cx="${N.cx}" cy="${N.cy}" r="${N.r}" fill="${ACCSS}" stroke="${ACC}" stroke-width="1.5"/>`+txt(N.cx,N.cy+4.5,t,ACCINK,11.5,700);
+  const rbox=(N,lab,fill,st,tc)=>`<rect x="${N.cx-N.w/2}" y="${N.cy-N.h/2}" width="${N.w}" height="${N.h}" rx="8" fill="${fill||FILL}" stroke="${st||LINE}" stroke-width="1.3"/>`+(lab?txt(N.cx,N.cy+4,lab,tc||INK,11,700):'');
+  // arrows
+  const arr=(x1,y1,x2,y2,c,w)=>{const a=Math.atan2(y2-y1,x2-x1),hl=8,hw=4.4,bx=x2-hl*Math.cos(a),by=y2-hl*Math.sin(a),px=Math.cos(a+Math.PI/2),py=Math.sin(a+Math.PI/2);return `<line x1="${x1}" y1="${y1}" x2="${bx}" y2="${by}" stroke="${c}" stroke-width="${w||1.5}" stroke-linecap="round"/><polygon points="${x2},${y2} ${bx+hw*px},${by+hw*py} ${bx-hw*px},${by-hw*py}" fill="${c}"/>`;};
+  const link=(A,B,c,w)=>{const e1=edge(A,B.cx,B.cy), e2=edge(B,A.cx,A.cy); return arr(e1[0],e1[1],e2[0],e2[1],c,w);};
+  const tau=(A,B,side)=>{const e1=edge(A,B.cx,B.cy), e2=edge(B,A.cx,A.cy), mx=(e1[0]+e2[0])/2, my=(e1[1]+e2[1])/2, d=uu(e1[0],e1[1],e2[0],e2[1]); let px=-d[1],py=d[0]; if(side*px<0){px=-px;py=-py;} return txt(mx+px*16,my+py*16+4,'\u03c4',MUT,12);};
+  return frame()
+    +link(X,ENC1,MUT)+link(X,ENC2,MUT)
+    +link(ENC1,INF,MUT)+link(INF,Q,MUT)+link(ENC2,Y,MUT)
+    +link(Q,SS,MUT)+link(Y,LIK,MUT)
+    +link(Q,KL,MUT)+link(PRIOR,KL,MUT)
+    +link(SS,LIK,ACC,1.8)+link(LIK,LOSS,ACC,1.8)
+    +link(KL,LOSS,ACC2,1.8)
+    +cV(X,'x')
+    +net(ENC1,'online encoder','f'+sub('\u03b8'))
+    +net(ENC2,'target encoder','f'+sub('\u03be')+' (sg)')
+    +net(INF,'inference','g'+sub('\u03c6'))
+    +cV(Y,'y')
+    +ellD(Q,'q(s) = N(\u03bc, \u03c3\u00b2)')
+    +ellD(PRIOR,'N(0, I)')
+    +cS(SS,'s')
+    +ellB(LIK,'p(y | s)')
+    +rbox(KL,'KL',ACC2F,ACC2,ACC2INK)
+    +rbox(LOSS,'',LOSSF,LINE)
+    +`<text x="${LOSS.cx}" y="${LOSS.cy+4}" fill="${INK}" font-size="11.5" text-anchor="middle" ${FT}>\u2113 = <tspan fill="${ACC}" font-weight="600">\u2212log p(y | s)</tspan> + <tspan fill="${ACC2}" font-weight="600">KL( q \u2016 N(0, I) )</tspan></text>`
+    +tau(X,ENC1,-1)+tau(X,ENC2,1);
+}
+
+// geodesic log map
+function buildLog(theta){
+  const cx=224,cy=190,R=92;
+  const start=deg(42), tgt=start-theta;
+  const src=polar(cx,cy,R,start), trg=polar(cx,cy,R,tgt);
+  const tA=logMapTangentScreenAngle(start);
+  const tLen=R*theta;
+  const tStart=ext(src,tA,-100), tEnd=ext(src,tA,206), vEnd=ext(src,tA,tLen);
+  const headLen=Math.min(15,Math.max(2,tLen-2)), halfW=7.5;
+  const baseC=ext(src,tA,tLen-headLen);
+  const hp1=ext(baseC,tA+Math.PI/2,halfW), hp2=ext(baseC,tA-Math.PI/2,halfW);
+  let conn='';
+  [0.25,0.5,0.75,1].forEach(f=>{
+    const ap=polar(cx,cy,R,start-theta*f), tp=ext(src,tA,tLen*f);
+    conn+=`<line x1="${ap.x}" y1="${ap.y}" x2="${tp.x}" y2="${tp.y}" stroke="#AAA397" stroke-width="1.3" stroke-dasharray="2.5 4" opacity="0.75"/><circle cx="${ap.x}" cy="${ap.y}" r="3" fill="#746F66" opacity="0.9"/>`;
+  });
+  return frame()+`<g transform="translate(0 6)">
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="#FFFFFF" stroke="#746F66" stroke-width="2"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${R}" ry="27" fill="none" stroke="#D2C8BA" stroke-width="2" stroke-dasharray="7 8"/>
+    <path d="${arcPath(cx,cy,R,start,tgt)}" fill="none" stroke="#24231F" stroke-width="7" stroke-linecap="round"/>
+    <line x1="${tStart.x}" y1="${tStart.y}" x2="${tEnd.x}" y2="${tEnd.y}" stroke="#746F66" stroke-width="2.5"/>
+    ${conn}
+    <line x1="${src.x}" y1="${src.y}" x2="${baseC.x}" y2="${baseC.y}" stroke="#536F72" stroke-width="3.4" stroke-linecap="round"/>
+    <polygon points="${vEnd.x},${vEnd.y} ${hp1.x},${hp1.y} ${hp2.x},${hp2.y}" fill="#536F72"/>
+    <circle cx="${src.x}" cy="${src.y}" r="7" fill="#24231F"/>
+    <circle cx="${trg.x}" cy="${trg.y}" r="7" fill="#746F66"/>
+    ${lab(src.x+12,src.y-14,'ŝ')}
+    ${lab(trg.x-30,trg.y+30,'ẑ')}
+    <text x="${vEnd.x+14}" y="${vEnd.y+6}" fill="#536F72" font-size="18" font-weight="700" ${FT}>u</text>
+  </g>
+  <g transform="translate(96 338)">
+    ${leg(0,0,'#24231F','geodesic arc, |arc| = θ')}
+    ${leg(210,0,'#746F66','tangent line')}
+  </g>`;
+}
+
+// Schur complement
+function buildSchur(rho){
+  // tangent = horizontal (t, x); radial = vertical (r, y)
+  const cx=262, cy=186, st=104, sr=72;
+  const cov=[[st*st,rho*st*sr],[rho*st*sr,sr*sr]];
+  const e=eig2(cov);
+  const ang=Math.atan2(e.vy,e.vx)*180/Math.PI;
+  const major=Math.sqrt(e.l1), minor=Math.sqrt(e.l2);
+  const wr=Math.sqrt(Math.max(0,1-rho*rho));
+  const cw=st*Math.max(0.02,wr);            // conditional half-width = st*sqrt(1-rho^2)
+  const vr=1-rho*rho;
+  const gTop=cy-sr-14, gBot=cy+sr+14;       // dashed marginal guide lines
+  const brY=cy+sr+34;                       // marginal bracket
+  const vt=(x)=>`<line x1="${x}" y1="${gTop}" x2="${x}" y2="${gBot}" stroke="#A5755E" stroke-width="1.3" stroke-dasharray="5 6"/>`;
+  return frame()+`<g>
+    <text x="26" y="30" fill="#746F66" font-size="13" ${FT}>covariance: tangent t, radial r &#183; tilt = ρ</text>
+    <line x1="96" y1="${cy}" x2="438" y2="${cy}" stroke="#AAA397" stroke-width="1.6" marker-end="url(#arrow-muted)"/>
+    <line x1="${cx}" y1="304" x2="${cx}" y2="60" stroke="#AAA397" stroke-width="1.6" marker-end="url(#arrow-muted)"/>
+    <text x="444" y="${cy-8}" fill="#746F66" font-size="13" ${FT}>t</text>
+    <text x="${cx+9}" y="70" fill="#746F66" font-size="13" ${FT}>r</text>
+    <ellipse cx="${cx}" cy="${cy}" rx="${major.toFixed(1)}" ry="${minor.toFixed(1)}" transform="rotate(${(-ang).toFixed(2)} ${cx} ${cy})" fill="#24231F" fill-opacity="0.08" stroke="#46433D" stroke-width="2"/>
+    ${vt(cx-st)} ${vt(cx+st)}
+    <line x1="${cx-st}" y1="${brY}" x2="${cx+st}" y2="${brY}" stroke="#9C725D" stroke-width="1.7"/>
+    <line x1="${cx-st}" y1="${brY-6}" x2="${cx-st}" y2="${brY+6}" stroke="#9C725D" stroke-width="1.7"/>
+    <line x1="${cx+st}" y1="${brY-6}" x2="${cx+st}" y2="${brY+6}" stroke="#9C725D" stroke-width="1.7"/>
+    <line x1="${(cx-cw).toFixed(1)}" y1="${cy}" x2="${(cx+cw).toFixed(1)}" y2="${cy}" stroke="#536F72" stroke-width="4.2"/>
+    <circle cx="${(cx-cw).toFixed(1)}" cy="${cy}" r="4" fill="#536F72"/><circle cx="${(cx+cw).toFixed(1)}" cy="${cy}" r="4" fill="#536F72"/>
+    <circle cx="${cx}" cy="${cy}" r="3" fill="#FFFFFF" stroke="#46433D" stroke-width="1.3"/>
+    <g transform="translate(64 338)">
+      <line x1="0" y1="0" x2="26" y2="0" stroke="#536F72" stroke-width="4.2"/>
+      <text x="34" y="4.5" fill="#536F72" font-size="12.5" ${FT}>Σₜₐₙ: conditional (slice r = 0)</text>
+    </g>
+    <g transform="translate(64 362)">
+      <line x1="0" y1="0" x2="26" y2="0" stroke="#9C725D" stroke-width="1.7" stroke-dasharray="5 6"/>
+      <text x="34" y="4.5" fill="#9C725D" font-size="12.5" ${FT}>marginal (projection over r)</text>
+    </g>
+    <text x="260" y="398" fill="#24231F" font-size="13" ${FT} text-anchor="middle">conditional = √(1−ρ²) &#215; marginal = ${wr.toFixed(2)} &#183; variance &#215; ${vr.toFixed(2)}</text>
+  </g>`;
+}
+
+// exponential-map Jacobian
+function buildJac(theta){
+  // D = 3: |J_exp| = sin(theta)/theta
+  const Rs=46, FOR=0.34, maxR=104;          // maxR = Rs * (slider max ~2.25), static reference disc
+  const planeCx=132, sphereCx=372, cy=186;
+  const flatR=Rs*theta;                     // flat disc radius = Rs*theta
+  const rimR=Rs*Math.sin(theta);            // Euclidean rim radius = Rs*sin(theta)
+  const bandY=cy-Rs*Math.cos(theta);
+  const bandRy=Math.max(2.5,rimR*FOR);
+  const rimRight={x:sphereCx+rimR, y:bandY};
+  const ratio=Math.sin(theta)/theta;
+  let spokes='';
+  for(let k=0;k<8;k++){const a=k*Math.PI/4; spokes+=`<line x1="${planeCx}" y1="${cy}" x2="${(planeCx+flatR*Math.cos(a)).toFixed(1)}" y2="${(cy-flatR*Math.sin(a)).toFixed(1)}" stroke="#D2C8BA" stroke-width="1"/>`;}
+  const arc=`M ${sphereCx} ${cy-Rs} A ${Rs} ${Rs} 0 0 1 ${rimRight.x.toFixed(1)} ${rimRight.y.toFixed(1)}`;
+  const aMid=Math.PI/2-theta/2, arcLab={x:(sphereCx+(Rs+15)*Math.cos(aMid)).toFixed(1), y:(cy-(Rs+15)*Math.sin(aMid)).toFixed(1)};
+  const axStart=planeCx+maxR+12, axEnd=sphereCx-Rs-14;   // static exp arrow
+  return frame()+`<g>
+    <text x="34" y="30" fill="#746F66" font-size="13" ${FT}>tangent plane</text>
+    <text x="490" y="30" fill="#746F66" font-size="13" ${FT} text-anchor="end">sphere (D = 3)</text>
+    <circle cx="${planeCx}" cy="${cy}" r="${maxR}" fill="none" stroke="#D2C8BA" stroke-width="1.4" stroke-dasharray="3 7"/>
+    <circle cx="${planeCx}" cy="${cy}" r="${flatR.toFixed(1)}" fill="#24231F" fill-opacity="0.05" stroke="#746F66" stroke-width="2"/>
+    ${spokes}
+    <line x1="${planeCx}" y1="${cy}" x2="${(planeCx+flatR).toFixed(1)}" y2="${cy}" stroke="#24231F" stroke-width="3" marker-end="url(#arrow-white)"/>
+    ${labThin((planeCx+flatR*0.5-4).toFixed(1),cy-11,'θ')}
+    <line x1="${axStart}" y1="${cy}" x2="${axEnd}" y2="${cy}" stroke="#746F66" stroke-width="2" marker-end="url(#arrow-muted)"/>
+    <text x="${((axStart+axEnd)/2).toFixed(1)}" y="${cy-11}" fill="#746F66" font-size="12.5" font-style="italic" ${FT} text-anchor="middle">exp</text>
+    <circle cx="${sphereCx}" cy="${cy}" r="${Rs}" fill="#FFFFFF" stroke="#746F66" stroke-width="2"/>
+    <ellipse cx="${sphereCx}" cy="${cy}" rx="${Rs}" ry="${(Rs*FOR).toFixed(1)}" fill="none" stroke="#D2C8BA" stroke-width="1.5" stroke-dasharray="5 7"/>
+    <ellipse cx="${sphereCx}" cy="${bandY.toFixed(1)}" rx="${rimR.toFixed(1)}" ry="${bandRy.toFixed(1)}" fill="none" stroke="#536F72" stroke-width="2.2"/>
+    <line x1="${sphereCx}" y1="${bandY.toFixed(1)}" x2="${rimRight.x.toFixed(1)}" y2="${bandY.toFixed(1)}" stroke="#536F72" stroke-width="1.7" stroke-dasharray="4 4"/>
+    <text x="${(sphereCx+rimR*0.55).toFixed(1)}" y="${(bandY+bandRy+12).toFixed(1)}" fill="#536F72" font-size="13" ${FT} text-anchor="middle">sinθ</text>
+    <path d="${arc}" fill="none" stroke="#24231F" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="${sphereCx}" cy="${cy-Rs}" r="3.5" fill="#24231F"/>
+    <circle cx="${rimRight.x.toFixed(1)}" cy="${rimRight.y.toFixed(1)}" r="3" fill="#536F72"/>
+    ${labThin(arcLab.x,arcLab.y,'θ',' text-anchor="middle"')}
+    <text x="260" y="384" fill="#24231F" font-size="13" ${FT} text-anchor="middle">arc = θ preserved &#183; circumference 2πθ → 2π sinθ</text>
+    <text x="260" y="406" fill="#24231F" font-size="13.5" font-weight="700" ${FT} text-anchor="middle">area &#215; sinθ/θ = ${ratio.toFixed(3)}</text>
+  </g>`;
+}
+
+// Student-t
+function gammaln(x){
+  const c=[676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(x<0.5) return Math.log(Math.PI/Math.sin(Math.PI*x))-gammaln(1-x);
+  x-=1; let a=0.99999999999980993; const t=x+7.5;
+  for(let i=0;i<8;i++) a+=c[i]/(x+i+1);
+  return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);
+}
+function tDens(r,nu){ const lc=gammaln((nu+1)/2)-gammaln(nu/2)-0.5*Math.log(nu*Math.PI); return Math.exp(lc-((nu+1)/2)*Math.log(1+r*r/nu)); }
+function nDens(r){ return 0.3989422804014327*Math.exp(-r*r/2); }
+function tGrad(r,nu){ return (nu+1)*r/(nu+r*r); }
+
+function buildCouple(theta,rz){
+  const INK='#24231F', MUT='#746F66', LINE='#D2C8BA', ACC='#536F72', ACC2='#9C725D', DARK='#5F5950', GV='#A99F90', RULE='#E7DFD4';
+  const rs=1.00, dr=rz-rs;
+  const rawTotal=dr*dr + 2*rs*rz*(1-Math.cos(theta));
+  const vjeDir=2*(1-Math.cos(theta)), vjeRad=dr*dr;
+  const GMAX=4.5;
+  const txt=(x,y,t,f=INK,sz=12,w=400,anc='middle')=>`<text x="${(+x).toFixed(1)}" y="${(+y).toFixed(1)}" fill="${f}" font-size="${sz}" font-weight="${w}" text-anchor="${anc}" ${FT}>${t}</text>`;
+  const line=(x1,y1,x2,y2,c,w=2,d='')=>`<line x1="${(+x1).toFixed(1)}" y1="${(+y1).toFixed(1)}" x2="${(+x2).toFixed(1)}" y2="${(+y2).toFixed(1)}" stroke="${c}" stroke-width="${w}" ${d?`stroke-dasharray="${d}"`:''} stroke-linecap="round"/>`;
+  const rrect=(x,y,w,h,fill,r=3)=>`<rect x="${(+x).toFixed(1)}" y="${(+y).toFixed(1)}" width="${(+w).toFixed(1)}" height="${h}" rx="${r}" fill="${fill}"/>`;
+  const arr=(x1,y1,x2,y2,c,w=2)=>{const a=Math.atan2(y2-y1,x2-x1);return line(x1,y1,x2,y2,c,w)+`<polygon points="${(+x2).toFixed(1)},${(+y2).toFixed(1)} ${(x2-8*Math.cos(a-0.34)).toFixed(1)},${(y2-8*Math.sin(a-0.34)).toFixed(1)} ${(x2-8*Math.cos(a+0.34)).toFixed(1)},${(y2-8*Math.sin(a+0.34)).toFixed(1)}" fill="${c}"/>`;};
+  const arc=(cx,cy,r,a0,a1,c,w=2)=>{const x0=cx+r*Math.cos(a0),y0=cy-r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy-r*Math.sin(a1);const lg=Math.abs(a1-a0)>Math.PI?1:0,sw=a1>a0?0:1;return `<path d="M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${lg} ${sw} ${x1.toFixed(2)} ${y1.toFixed(2)}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;};
+  const halo=(x,y,t,f,sz=14)=>`<text x="${(+x).toFixed(1)}" y="${(+y).toFixed(1)}" fill="${f}" stroke="#FFFEFA" stroke-width="0.9" paint-order="stroke" stroke-linejoin="round" font-size="${sz}" font-weight="700" text-anchor="middle" ${FT}>${t}</text>`;
+
+  // raw glyph
+  const O={x:92,y:188}, sc=34;
+  const ps={x:O.x+sc*rs, y:O.y};
+  const pz={x:O.x+sc*rz*Math.cos(theta), y:O.y-sc*rz*Math.sin(theta)};
+  const zLeft = pz.x < O.x;
+  // directional glyph
+  const UC={x:262,y:156}, ur=36;
+  const us={x:UC.x+ur, y:UC.y};
+  const uz={x:UC.x+ur*Math.cos(theta), y:UC.y-ur*Math.sin(theta)};
+  const uzLeft = uz.x < UC.x;
+  // radial glyph
+  const ppn=26, bx0=384, ySr=146, yZr=170;
+  const ms=bx0+rs*ppn, mz=bx0+rz*ppn, lo=Math.min(ms,mz), hi=Math.max(ms,mz);
+  // columns
+  const cols=[{x:110,c:DARK,v:rawTotal,name:'‖z−s‖²'},{x:262,c:ACC,v:vjeDir,name:'directional'},{x:416,c:ACC2,v:vjeRad,name:'radial'}];
+  const numY=250, barY=266, labY=300, half=44;
+  const bar=c=>{const L=Math.min(half*2, c.v/GMAX*half*2); const over=c.v>GMAX+0.02;
+    return rrect(c.x-half,barY,half*2,6,RULE,3)+rrect(c.x-half,barY,L,6,c.c,3)+(over?`<path d="M ${(c.x+half+4).toFixed(1)} ${barY-2} L ${(c.x+half+9).toFixed(1)} ${barY+3} L ${(c.x+half+4).toFixed(1)} ${barY+8}" fill="none" stroke="${c.c}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`:'');};
+
+  return frame()+`<g>
+    ${line(186,112,186,322,RULE,1)}
+    ${line(338,112,338,322,RULE,1)}
+
+    ${arr(O.x,O.y,ps.x,ps.y,GV,2)}
+    ${arr(O.x,O.y,pz.x,pz.y,GV,2)}
+    ${line(ps.x,ps.y,pz.x,pz.y,DARK,2.4)}
+    ${txt(ps.x+6,ps.y+4,'s',MUT,10.5,700,'start')}
+    ${txt(pz.x+(zLeft?-6:6),pz.y-5,'z',MUT,10.5,700,zLeft?'end':'start')}
+
+    <circle cx="${UC.x}" cy="${UC.y}" r="${ur}" fill="#FFFFFF" stroke="#CFC6BA" stroke-width="1.2"/>
+    ${arr(UC.x,UC.y,us.x,us.y,GV,2)}
+    ${arr(UC.x,UC.y,uz.x,uz.y,GV,2)}
+    ${arc(UC.x,UC.y,16,0,theta,ACC,2.2)}
+    ${halo(UC.x+24*Math.cos(theta/2),UC.y-24*Math.sin(theta/2),'θ',ACC,14)}
+    ${txt(us.x+5,us.y+12,'s',MUT,10,700,'start')}
+    ${txt(uz.x+(uzLeft?-5:5),uz.y-5,'z',MUT,10,700,uzLeft?'end':'start')}
+
+    ${txt(bx0-7,ySr+4,'s',MUT,10.5,700,'end')}
+    ${txt(bx0-7,yZr+4,'z',MUT,10.5,700,'end')}
+    ${line(bx0,ySr,ms,ySr,GV,7)}
+    ${line(bx0,yZr,mz,yZr,ACC2,7)}
+    ${line(lo,ySr-14,lo,yZr+11,MUT,1,'2 3')}
+    ${line(hi,ySr-14,hi,yZr+11,MUT,1,'2 3')}
+    ${line(lo,ySr-14,hi,ySr-14,ACC2,1.4)}
+    ${txt((lo+hi)/2,ySr-19,'Δr',ACC2,10,700)}
+
+    ${cols.map(c=>txt(c.x,numY,c.v.toFixed(2),c.c,14,400)).join('')}
+    ${cols.map(c=>bar(c)).join('')}
+    ${cols.map(c=>txt(c.x,labY,c.name,c.c,12.5,700)).join('')}
+  </g>`;
+}
+
+function buildTdf(nu){
+  const BLUE='#536F72', GREY='#746F66', REF='#9C725D';
+  const RR=5, padX=24, gap=34, topY=72, botY=298;
+  const pw=(520-2*padX-gap)/2, ax=padX, bx=padX+pw+gap;
+  const dMax=0.42, GM=5, midY=(topY+botY)/2;
+  const dX=r=>ax+(r+RR)/(2*RR)*pw, dY=v=>botY-(v/dMax)*(botY-topY);
+  const gX=r=>bx+(r+RR)/(2*RR)*pw, gY=v=>midY-(v/GM)*((botY-topY)/2);
+  const cv=(fn,X,Y)=>{let d='';for(let i=0;i<=180;i++){const r=-RR+2*RR*i/180;d+=(i?'L':'M')+X(r).toFixed(1)+' '+Y(fn(r)).toFixed(1);}return d;};
+  const cg=v=>Math.max(-GM,Math.min(GM,v));
+  let dt='';[-4,-2,2,4].forEach(t=>{dt+=`<line x1="${dX(t).toFixed(1)}" y1="${botY}" x2="${dX(t).toFixed(1)}" y2="${botY+4}" stroke="#AAA397" stroke-width="1"/><text x="${dX(t).toFixed(1)}" y="${botY+17}" fill="#746F66" font-size="10.5" ${FT} text-anchor="middle">${t}</text>`;});
+  let gt='';[-4,-2,2,4].forEach(t=>{gt+=`<text x="${gX(t).toFixed(1)}" y="${t<0?midY-5:midY+15}" fill="#746F66" font-size="10.5" ${FT} text-anchor="middle">${t}</text>`;});
+  const nuLab=String(Math.round(nu));
+  return frame()+`<g>
+    <text x="${(ax+pw/2).toFixed(1)}" y="46" fill="#46433D" font-size="13" ${FT} text-anchor="middle">density &#8201;p(r)</text>
+    <text x="${(bx+pw/2).toFixed(1)}" y="46" fill="#46433D" font-size="13" ${FT} text-anchor="middle">gradient &#8201;&#8706;NLL/&#8706;r</text>
+    <line x1="${ax}" y1="${botY}" x2="${(ax+pw).toFixed(1)}" y2="${botY}" stroke="#746F66" stroke-width="1.4"/>
+    <line x1="${dX(0).toFixed(1)}" y1="${botY}" x2="${dX(0).toFixed(1)}" y2="${topY-2}" stroke="#D2C8BA" stroke-width="1"/>
+    ${dt}
+    <path d="${cv(r=>tDens(r,1),dX,dY)}" fill="none" stroke="${GREY}" stroke-width="1.5" stroke-dasharray="1.5 3.5" opacity="0.9"/>
+    <path d="${cv(nDens,dX,dY)}" fill="none" stroke="${REF}" stroke-width="1.7" stroke-dasharray="6 5"/>
+    <path d="${cv(r=>tDens(r,nu),dX,dY)}" fill="none" stroke="${BLUE}" stroke-width="2.6"/>
+    <line x1="${bx}" y1="${midY}" x2="${(bx+pw).toFixed(1)}" y2="${midY}" stroke="#746F66" stroke-width="1.4"/>
+    <line x1="${gX(0).toFixed(1)}" y1="${topY-2}" x2="${gX(0).toFixed(1)}" y2="${botY+2}" stroke="#D2C8BA" stroke-width="1"/>
+    ${gt}
+    <path d="${cv(r=>cg(tGrad(r,1)),gX,gY)}" fill="none" stroke="${GREY}" stroke-width="1.5" stroke-dasharray="1.5 3.5" opacity="0.9"/>
+    <path d="${cv(r=>cg(r),gX,gY)}" fill="none" stroke="${REF}" stroke-width="1.7" stroke-dasharray="6 5"/>
+    <path d="${cv(r=>cg(tGrad(r,nu)),gX,gY)}" fill="none" stroke="${BLUE}" stroke-width="2.6"/>
+    <g transform="translate(64 330)">
+      <line x1="0" y1="0" x2="20" y2="0" stroke="${BLUE}" stroke-width="2.6"/><text x="26" y="4" fill="#746F66" font-size="11" ${FT}>\u03bd = ${nuLab}</text>
+      <line x1="116" y1="0" x2="136" y2="0" stroke="${REF}" stroke-width="1.7" stroke-dasharray="6 5"/><text x="142" y="4" fill="#746F66" font-size="11" ${FT}>Gaussian (\u03bd\u2009\u2192\u2009\u221e)</text>
+      <line x1="276" y1="0" x2="296" y2="0" stroke="${GREY}" stroke-width="1.5" stroke-dasharray="1.5 3.5"/><text x="302" y="4" fill="#746F66" font-size="11" ${FT}>Cauchy (\u03bd\u2009=\u20091)</text>
+    </g>
+    <text x="260" y="396" fill="#24231F" font-size="12.5" ${FT} text-anchor="middle">gradient bounded \u00b7 peak at r = \u221a\u03bd \u00b7 tails heavier as \u03bd \u2192 1</text>
+  </g>`;
+}
+
+// state + animation
+const S={
+  log:{playing:true,phase:0.32,theta:1.05},
+  schur:{playing:true,phase:0.10,rho:0.62},
+  jac:{playing:true,phase:0.46,theta:1.05},
+  couple:{playing:true,phase:0.26,theta:0.95,rz:2.20},
+  tdf:{playing:true,phase:0.18,nu:28},
+};
+const svgLog=document.getElementById('svg-log');
+const svgSchur=document.getElementById('svg-schur');
+const svgJac=document.getElementById('svg-jac');
+const svgCouple=document.getElementById('svg-couple');
+const svgTdf=document.getElementById('svg-tdf');
+
+const animLog=ph=>0.35+1.85*smoothPulse(ph);
+const animSchur=ph=>0.15+0.72*smoothPulse(ph);
+const animJac=ph=>0.35+1.85*smoothPulse(ph);
+const animCoupleTheta=ph=>0.32+1.18*smoothPulse(ph);
+const animCoupleRz=ph=>0.75+1.75*smoothPulse((ph+0.33)%1);
+const animTdf=ph=>2+26*smoothPulse(ph);
+// figure registry
+const figs={
+  log:  {st:S.log,  svg:svgLog,  build:buildLog,  anim:animLog,  f:'theta', sl:'sl-log',       rd:'rd-log',       fmt:v=>v.toFixed(2)+' rad',  vis:false, dirty:true},
+  schur:{st:S.schur,svg:svgSchur,build:buildSchur,anim:animSchur,f:'rho',   sl:'sl-schur',     rd:'rd-schur',     fmt:v=>'ρ = '+v.toFixed(2),  vis:false, dirty:true},
+  jac:  {st:S.jac,  svg:svgJac,  build:buildJac,  anim:animJac,  f:'theta', sl:'sl-jac-theta', rd:'rd-jac-theta', fmt:v=>v.toFixed(2)+' rad',  vis:false, dirty:true},
+  couple:{st:S.couple,svg:svgCouple,build:buildCouple,multi:true,vis:false,dirty:true},
+  tdf:  {st:S.tdf,  svg:svgTdf,  build:buildTdf,  anim:animTdf,  f:'nu',    sl:'sl-tdf',       rd:'rd-tdf',       fmt:v=>'ν = '+Math.round(v), vis:false, dirty:true},
+};
+const curVal=F=>F.st.playing?F.anim(F.st.phase):F.st[F.f];
+function renderFig(F){
+  if(F.multi){
+    const theta=F.st.playing?animCoupleTheta(F.st.phase):F.st.theta;
+    const rz=F.st.playing?animCoupleRz(F.st.phase):F.st.rz;
+    F.svg.innerHTML=F.build(theta,rz);
+    const rdTheta=document.getElementById('rd-couple-theta'); if(rdTheta) rdTheta.textContent='θ = '+theta.toFixed(2)+' rad';
+    const rdRz=document.getElementById('rd-couple-rz'); if(rdRz) rdRz.textContent='‖z‖ = '+rz.toFixed(2);
+    if(F.st.playing){
+      const slTheta=document.getElementById('sl-couple-theta'); if(slTheta) slTheta.value=theta;
+      const slRz=document.getElementById('sl-couple-rz'); if(slRz) slRz.value=rz;
+    }
+    return;
+  }
+  const v=curVal(F);
+  F.svg.innerHTML=F.build(v);
+  const rd=document.getElementById(F.rd); if(rd) rd.textContent=F.fmt(v);
+  if(F.st.playing){ const sl=document.getElementById(F.sl); if(sl) sl.value=v; }
+}
+
+// rAF loop (dt-based phase)
+const PHASE_RATE=0.182;                 // phase units per second (~5.5 s / cycle)
+let _last=performance.now();
+function frameLoop(now){
+  const dt=Math.min(0.05,(now-_last)/1000); _last=now;
+  for(const k in figs){
+    const F=figs[k];
+    if(!F.vis) continue;
+    if(F.st.playing){ F.st.phase=(F.st.phase+PHASE_RATE*dt)%1; F.dirty=true; }
+    if(F.dirty){ renderFig(F); F.dirty=false; }
+  }
+  requestAnimationFrame(frameLoop);
+}
+
+/* play / pause */
+function wirePP(btnId,key,sliderId,field,animFn){
+  const btn=document.getElementById(btnId), sl=document.getElementById(sliderId);
+  btn.addEventListener('click',()=>{
+    if(S[key].playing){                 
+      S[key][field]=animFn(S[key].phase);
+      sl.value=S[key][field];
+    }
+    S[key].playing=!S[key].playing;
+    btn.textContent=S[key].playing?'Pause':'Play';
+    sl.disabled=S[key].playing;
+    figs[key].dirty=true;
+  });
+}
+wirePP('pp-log','log','sl-log','theta',animLog);
+wirePP('pp-schur','schur','sl-schur','rho',animSchur);
+wirePP('pp-jac','jac','sl-jac-theta','theta',animJac);
+wirePP('pp-tdf','tdf','sl-tdf','nu',animTdf);
+
+(function(){
+  const btn=document.getElementById('pp-couple');
+  const slTheta=document.getElementById('sl-couple-theta');
+  const slRz=document.getElementById('sl-couple-rz');
+  btn.addEventListener('click',()=>{
+    if(S.couple.playing){
+      S.couple.theta=animCoupleTheta(S.couple.phase);
+      S.couple.rz=animCoupleRz(S.couple.phase);
+      slTheta.value=S.couple.theta;
+      slRz.value=S.couple.rz;
+    }
+    S.couple.playing=!S.couple.playing;
+    btn.textContent=S.couple.playing?'Pause':'Play';
+    slTheta.disabled=S.couple.playing;
+    slRz.disabled=S.couple.playing;
+    figs.couple.dirty=true;
+  });
+})();
+
+// slider input
+document.getElementById('sl-log').addEventListener('input',e=>{S.log.theta=+e.target.value;renderFig(figs.log);});
+document.getElementById('sl-schur').addEventListener('input',e=>{S.schur.rho=+e.target.value;renderFig(figs.schur);});
+document.getElementById('sl-jac-theta').addEventListener('input',e=>{S.jac.theta=+e.target.value;renderFig(figs.jac);});
+document.getElementById('sl-couple-theta').addEventListener('input',e=>{S.couple.theta=+e.target.value;renderFig(figs.couple);});
+document.getElementById('sl-couple-rz').addEventListener('input',e=>{S.couple.rz=+e.target.value;renderFig(figs.couple);});
+document.getElementById('sl-tdf').addEventListener('input',e=>{S.tdf.nu=+e.target.value;renderFig(figs.tdf);});
+
+document.getElementById('svg-arch').innerHTML=buildArch();
+
+// reduced-motion: start paused
+if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+  for(const k in figs){
+    const F=figs[k]; F.st.playing=false;
+    const b=document.getElementById('pp-'+k); if(b) b.textContent='Play';
+    const sl=document.getElementById(F.sl); if(sl) sl.disabled=false;
+    if(k==='couple'){ const slt=document.getElementById('sl-couple-theta'); if(slt) slt.disabled=false; const slr=document.getElementById('sl-couple-rz'); if(slr) slr.disabled=false; }
+  }
+}
+
+// initial paint
+for(const k in figs) renderFig(figs[k]);
+
+// pause off-screen figures
+if('IntersectionObserver' in window){
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      const k=e.target.dataset.fig; if(!figs[k]) return;
+      figs[k].vis=e.isIntersecting;
+      if(e.isIntersecting) figs[k].dirty=true;
+    });
+  },{rootMargin:'140px 0px'});
+  for(const k in figs){ figs[k].svg.dataset.fig=k; io.observe(figs[k].svg); }
+}else{
+  for(const k in figs) figs[k].vis=true;
+}
+requestAnimationFrame(frameLoop);
+
+// copy bibtex
+(function(){
+  var b=document.getElementById('copy-bib');
+  if(!b) return;
+  b.addEventListener('click',function(){
+    var t=document.getElementById('bib-src').textContent;
+    var done=function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy';},1500);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){done();});}
+    else{var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);done();}
+  });
+})();
+
+// math
+function typeset(){
+  renderMathInElement(document.body,{
+    delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+    throwOnError:false
+  });
+}
+// wait for KaTeX auto-render, then typeset
+(function waitForKatex(tries){
+  if(window.renderMathInElement){ typeset(); return; }
+  if(tries<=0){ return; }
+  setTimeout(function(){ waitForKatex(tries-1); }, 100);
+})(100);
+</script>
+</body>
+</html>
