@@ -6,10 +6,54 @@
 <title>Joint Embedding Variational Bayes: an interactive introduction</title>
 <meta name="description" content="An interactive, from-fundamentals introduction to Variational Joint Embedding (VJE) by Oji & Fieguth (TMLR 2026), with the directional likelihood derived and visualized step by step.">
 <meta name="author" content="Oji & Fieguth">
+<link rel="canonical" href="https://aoji.github.io/vje/">
+
 <meta property="og:type" content="article">
+<meta property="og:site_name" content="Joint Embedding Variational Bayes">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://aoji.github.io/vje/">
 <meta property="og:title" content="Joint Embedding Variational Bayes: an interactive introduction">
 <meta property="og:description" content="From-fundamentals walkthrough of VJE, with the directional likelihood (log-map, Schur complement, exponential-map Jacobian) shown step by step.">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://aoji.github.io/vje/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Joint Embedding Variational Bayes, an interactive companion (TMLR 2026)">
+<meta property="article:author" content="Amin Oji">
+<meta property="article:author" content="Paul Fieguth">
+<meta property="article:tag" content="self-supervised learning">
+<meta property="article:tag" content="representation learning">
+<meta property="article:tag" content="variational inference">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Joint Embedding Variational Bayes: an interactive introduction">
+<meta name="twitter:description" content="From-fundamentals walkthrough of VJE, with the directional likelihood shown step by step.">
+<meta name="twitter:image" content="https://aoji.github.io/vje/og.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ScholarlyArticle",
+  "name": "Joint Embedding Variational Bayes",
+  "headline": "Joint Embedding Variational Bayes: an interactive introduction",
+  "description": "An interactive, from-fundamentals introduction to Variational Joint Embedding (VJE), deriving and visualizing the directional likelihood (geodesic log-map, Schur complement, exponential-map Jacobian) step by step.",
+  "inLanguage": "en",
+  "url": "https://aoji.github.io/vje/",
+  "image": "https://aoji.github.io/vje/og.png",
+  "datePublished": "2026",
+  "author": [
+    {"@type": "Person", "name": "Amin Oji", "affiliation": {"@type": "Organization", "name": "University of Waterloo"}},
+    {"@type": "Person", "name": "Paul Fieguth", "affiliation": {"@type": "Organization", "name": "University of Waterloo"}}
+  ],
+  "isPartOf": {"@type": "Periodical", "name": "Transactions on Machine Learning Research"},
+  "sameAs": [
+    "https://arxiv.org/abs/2602.05639",
+    "https://openreview.net/forum?id=4cbPJ5jLtr",
+    "https://github.com/aoji/vje"
+  ],
+  "identifier": "arXiv:2602.05639",
+  "keywords": "self-supervised learning, representation learning, variational inference, joint embedding, JEPA, ELBO, directional statistics"
+}
+</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,8 +142,8 @@
   .ctl input[type=range]{flex:1;accent-color:#536F72;cursor:pointer;height:3px}
   .ctl input[type=range]:disabled{opacity:.55;cursor:default}
   .ctl .val{font-family:var(--mono);font-size:.84rem;color:#46433D;min-width:4.4rem;text-align:right}
-  .cpl-ctrl{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:". tl ts tv" "pp zl zs zv";align-items:center;gap:.5rem .7rem;padding:.7rem .3rem .25rem}
-  .cpl-ctrl .cl-pp{grid-area:pp;margin:0}
+  .cpl-ctrl{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:"pp tl ts tv" "pp zl zs zv";align-items:center;gap:.5rem .7rem;padding:.7rem .3rem .25rem}
+  .cpl-ctrl .cl-pp{grid-area:pp;margin:0;align-self:center}
   .cpl-ctrl .cl-tl{grid-area:tl}
   .cpl-ctrl .cl-ts{grid-area:ts}
   .cpl-ctrl .cl-tv{grid-area:tv}
@@ -141,6 +185,30 @@
   .bibtex pre{background:var(--plate);color:#46433D;border:1px solid var(--plate-rule);border-radius:6px;padding:1rem 1.05rem;overflow-x:auto;font-family:var(--mono);font-size:.8rem;line-height:1.5;white-space:pre;margin:0}
   .copybtn{position:absolute;top:.5rem;right:.55rem;font-family:var(--serif);font-size:.78rem;letter-spacing:0;text-transform:none;background:var(--paper);color:#46433D;border:1px solid var(--plate-rule);border-radius:4px;padding:.3rem .72rem;cursor:pointer}
   .copybtn:hover{background:var(--plate)}
+
+  /* mobile */
+  @media (max-width:640px){
+    body{font-size:17px}
+    main p,main li{text-align:left}
+    header.mast{padding:2.4rem 1.2rem 0}
+    .wrap{padding:0 1.1rem}
+
+    /* dense SVG figures span the full viewport width so they render larger */
+    .figblock{margin-left:-1.1rem;margin-right:-1.1rem;border-radius:0;border-left:none;border-right:none}
+    .plate{padding:.55rem .5rem .4rem}
+    .plate-head{padding:.1rem .25rem .55rem;gap:.3rem .6rem}
+    .plate-head .produces{margin-left:0;flex-basis:100%}
+    .caption{padding:.7rem .95rem .7rem}
+
+    /* single slider: label on its own line, full-width track */
+    .controls{gap:.4rem .7rem;padding:.6rem .35rem .15rem}
+    .ctl{flex:1 1 100%;min-width:0;flex-wrap:wrap;gap:.3rem .5rem}
+    .ctl>span:first-child{flex:0 0 100%;white-space:normal}
+
+    /* entanglement figure: two sliders, pause on its own row above */
+    .cpl-ctrl{grid-template-columns:auto 1fr auto;grid-template-areas:"pp pp pp" "tl ts tv" "zl zs zv";gap:.5rem .55rem;padding:.55rem .35rem .15rem}
+    .cpl-ctrl .cl-pp{grid-area:pp;justify-self:start;margin-bottom:.15rem}
+  }
 </style>
 </head>
 <body>
@@ -189,7 +257,7 @@
   <p>At a high level, non-contrastive methods replace labels with agreement between two views of the same input. In the predictive case this is usually written as a pointwise discrepancy between a prediction from one view and a target representation from the other,</p>
   <div class="eq">$$\mathcal L_{\text{pred}}(x_1,x_2)=d\big(h(f_\theta(x_1)),\,f_\xi(x_2)\big),$$</div>
   <p>where $d$ is a cosine or Euclidean distance, $h$ is a predictor, and $f_\xi$ a detached target encoder. The distance plays the role of an energy, low when the views agree. Such methods are usually called energy-based, but the term is narrower in use than in principle: a normalized density is itself an energy, namely $-\log p$, so what these objectives actually commit to is leaving the energy unnormalized. That choice, of which the Joint Embedding Predictive Architecture (JEPA<sup class="cite"><a href="#ref-5">5</a></sup>) is a prominent restatement, carries two structural consequences regardless of framing. The first is that some device is needed to rule out collapse, the constant map onto a single point, but the choice of device is heuristic, not dictated by the objective: the predictive asymmetry, the redundancy-reduction penalties, or the isotropic-Gaussian matching of LeJEPA<sup class="cite"><a href="#ref-8">8</a></sup> (SIGReg), the last argued to be principled but only relative to the loss and assumptions it adopts. The second is that each input becomes a single point, so the representation cannot express how certain that point is, a quantity that may in fact be the most valuable in label-scarce settings.</p>
-  <p>Probabilistic reformulations of SSL exist, but they usually reinterpret an existing deterministic objective rather than building the training criterion as a representation-space likelihood. VI-SimSiam<sup class="cite"><a href="#ref-9">9</a></sup>, which reads SimSiam as variational inference with a concentration on each prediction, is one such reformulation. Variational Joint Embedding (VJE) changes the objective itself: it replaces the plain distance with a latent-variable objective in representation space, derived from the spherical construction used in the paper. The model assigns a separate uncertainty to each feature, and it treats each embedding as a unit direction together with a scalar magnitude. The asymmetry that other methods add to prevent collapse is here derived rather than assumed: a likelihood conditions on an observation, that observation is fixed rather than optimized, and the stop-gradient on the target is what enforces it, so any effect on collapse is a consequence and not the reason. The devices with no first-principles role, the projection head being the obvious one, are simply absent. Aside from those, the architectural motifs are shared, so the pointwise methods are recovered as limiting cases of VJE's objective.</p>
+  <p>Probabilistic reformulations of SSL exist, but they usually reinterpret an existing deterministic objective rather than building the training criterion as a representation-space likelihood. VI-SimSiam<sup class="cite"><a href="#ref-9">9</a></sup>, which reads SimSiam as variational inference with a concentration on each prediction, is one such reformulation. Variational Joint Embedding (VJE) changes the objective itself: it replaces the plain distance with a latent-variable objective in representation space, derived from the spherical construction used in the paper. The model assigns a separate uncertainty to each feature, and it treats each embedding as a unit direction together with a scalar magnitude. The fixed-target asymmetry has a probabilistic interpretation in VJE: a likelihood conditions on an observation, that observation is fixed rather than optimized, and the stop-gradient on the target is what enforces it, giving the usual stop-gradient mechanism a modeling role rather than treating it purely as an architectural trick. The devices with no first-principles role, the projection head being the obvious one, are simply absent. Aside from those, the architectural motifs are shared, so the pointwise methods are recovered as limiting cases of VJE's objective.</p>
 </section>
 
 <section>
@@ -235,16 +303,16 @@
   <h2>The likelihood</h2>
   <p>The likelihood $p(y_j\mid\mathbf s)$ follows from one observation about embeddings and three design choices.</p>
   <h4>The structure of an embedding.</h4>
-  <p>A vector $\mathbf z\in\mathbb R^D$ carries a direction and a magnitude. A single Gaussian on $\mathbf z$ couples the two and is sensitive to changes in the embedding norm, so VJE models angular agreement and magnitude agreement as separate factors, each with its own scale.</p>
+  <p>A vector $\mathbf z\in\mathbb R^D$ carries a direction and a magnitude. A single Gaussian on $\mathbf z$ entangles the two and is sensitive to changes in the embedding norm, so VJE models angular agreement and magnitude agreement as separate factors, each with its own scale.</p>
   <h4>Direction and magnitude decomposition.</h4>
   <p>The observation is written as a direction and a length, $y=(\hat{\mathbf z},\lVert\mathbf z\rVert)$, and the likelihood is factored into a directional term on the unit sphere $\mathbb S^{D-1}$ and a one-dimensional radial term. The latent is decomposed the same way, giving the radial residual $\Delta r_{ij}=\lVert\mathbf z_j\rVert-\lVert\mathbf s_i\rVert$.</p>
   <div class="figblock">
     <div class="plate">
       <div class="plate-head">
         <span class="step">Why split the likelihood?</span>
-        <span class="step-name">Direction-norm coupling</span>
+        <span class="step-name">Direction-norm entanglement</span>
       </div>
-      <svg id="svg-couple" class="fig" viewBox="0 0 520 420" role="img" aria-label="A comparison between raw Euclidean matching, which couples angle and norm, and the VJE factorization, which scores direction and magnitude separately"></svg>
+      <svg id="svg-couple" class="fig" viewBox="0 0 520 420" role="img" aria-label="A comparison between raw Euclidean matching, which entangles angle and norm, and the VJE factorization, which scores direction and magnitude separately"></svg>
       <div class="cpl-ctrl">
         <label class="cl-tl" for="sl-couple-theta">angle&nbsp;$\theta$</label>
         <input class="cl-ts" id="sl-couple-theta" type="range" min="0.20" max="1.65" step="0.01" value="0.95" disabled>
@@ -256,9 +324,9 @@
       </div>
     </div>
     <div class="caption">
-      <div class="cap-label">Direction-norm coupling</div>
+      <div class="cap-label">Direction-norm entanglement</div>
       <p><strong>Shown.</strong> The same vector mismatch is scored two ways, with the predicted norm fixed at $\lVert\mathbf s\rVert=1$ and the sliders setting the angular mismatch $\theta$ and the target norm $\lVert\mathbf z\rVert$. <em>Left,</em> the raw squared distance $\lVert\mathbf z-\mathbf s\rVert^2$, the single quantity a Euclidean loss minimizes: $\mathbf s$ is the fixed reference, $\mathbf z$ swings by $\theta$ and grows with $\lVert\mathbf z\rVert$, and the chord between the tips is what is penalized. <em>Middle and right,</em> the VJE factorization scores the same mismatch as a directional term on the unit sphere, set by $\theta$ alone, and a radial term, set by $\Delta r=\lVert\mathbf z\rVert-\lVert\mathbf s\rVert$ alone. The bars share one scale, so it is their relative sizes, not the absolute numbers, that matter.</p>
-      <p><strong>Why it matters.</strong> The raw squared error expands as $\lVert\mathbf z-\mathbf s\rVert^2=(\Delta r)^2+2\lVert\mathbf z\rVert\lVert\mathbf s\rVert(1-\cos\theta)$: a single scalar whose angular term is scaled by the norm. Direction and magnitude may carry different semantics, so scoring them under one scale and optimizing jointly can lead to pathologies: the score gives no way to weight the two separately, and the norm-scaling couples their gradients, so the optimizer cannot reduce angular and radial disagreement independently. Progress on one can then come at the expense of the other, and neither is adequately optimized. The problem grows with dimension: the radial residual is one coordinate while direction spans the remaining $D-1$, so a single isotropic scale is applied to both.</p>
+      <p><strong>Why it matters.</strong> The raw squared error expands as $\lVert\mathbf z-\mathbf s\rVert^2=(\Delta r)^2+2\lVert\mathbf z\rVert\lVert\mathbf s\rVert(1-\cos\theta)$: a single scalar whose angular term is scaled by the norm. Direction and magnitude may carry different semantics, so scoring them under one scale and optimizing jointly can lead to pathologies: the score gives no way to weight the two separately, and the norm-scaling entangles their gradients, so the optimizer cannot reduce angular and radial disagreement independently. Progress on one can then come at the expense of the other, with the two effects traded off under one scalar penalty. The problem grows with dimension: the radial residual is one coordinate while direction spans the remaining $D-1$, so a single isotropic scale is applied to both.</p>
     </div>
   </div>
 
@@ -267,8 +335,8 @@
   <div class="figblock">
     <div class="plate">
       <div class="plate-head">
-        <span class="step">Tail weight</span>
-        <span class="step-name">Degrees of freedom $\nu$</span>
+        <span class="step">Robustness</span>
+        <span class="step-name">Bounded gradients</span>
       </div>
       <svg id="svg-tdf" class="fig" viewBox="0 0 520 420" role="img" aria-label="Student-t density and the gradient of its negative log-likelihood as the degrees of freedom sweep from Cauchy to the Gaussian limit"></svg>
       <div class="controls">
@@ -277,7 +345,7 @@
       </div>
     </div>
     <div class="caption">
-      <div class="cap-label">Degrees of freedom $\nu$</div>
+      <div class="cap-label">Bounded gradients</div>
       <p><strong>Shown.</strong> The shared Student-$t$ factor as a function of the residual, at the current degrees of freedom $\nu$ (slider, integer; $\nu=100$ is drawn as the Gaussian limit). <em>Left,</em> the density against a Gaussian of the same scale (dashed): small $\nu$ has a lower peak and heavier tails, and the two coincide as $\nu\to\infty$. <em>Right,</em> the gradient of the negative log-likelihood, $\partial_r\,\mathrm{NLL}=(\nu+1)\,r/(\nu+r^2)$ (blue), the quantity that drives the update, against the Gaussian gradient $r$ (dashed).</p>
       <p><strong>Why it matters.</strong> The Gaussian gradient grows without bound, so a single large residual dominates the step. The Student-$t$ gradient rises, peaks near $r=\sqrt{\nu}$, then redescends toward zero, automatically down-weighting hard or mislabelled pairs. Both the directional and radial factors share this one $\nu$, the single knob trading robustness ($\nu\!\to\!1$, the Cauchy limit) against Gaussian behaviour ($\nu\!\to\!\infty$).</p>
     </div>
@@ -393,8 +461,32 @@
 
 <section>
   <span class="secnum">Section 6</span>
+  <h2>Scoring at inference</h2>
+  <p>Training pairs two augmentations, which raises a practical question: to score a new input, do two views have to be passed through together? They do not. Two views are what the training objective needs, one to form the posterior and one to serve as the observation the likelihood conditions on. At test time there is nothing to predict across views. A single image is passed through the encoder and $g_\phi$ once, giving the posterior mean $\boldsymbol\mu$ and the per-feature variance $\boldsymbol\sigma^2$, and the embedding is scored under the posterior inferred from it, the joint likelihood at inference, with no second view and no augmentation.</p>
+
+  <div class="figblock">
+    <div class="plate">
+      <div class="plate-head">
+        <span class="step">Overview</span>
+        <span class="step-name">Training and inference</span>
+      </div>
+      <svg id="svg-pipelines" class="fig" viewBox="0 0 520 270" role="img" aria-label="Training and inference as horizontal pipelines. Training: one input is augmented into two views; the online view goes through the encoder and inference network and a latent is sampled, the target view goes through the encoder to an observation, and their cross-view likelihood gives the loss. Inference: a single view goes through the encoder and inference network, and the likelihood is evaluated at the posterior mean rather than by sampling."></svg>
+    </div>
+    <div class="caption">
+      <div class="cap-label">Training and inference</div>
+      <p>The two pipelines. Training (top): one input is augmented into two views; the online view is encoded and passed through $g_\phi$ to a posterior, from which a latent is sampled, while the target view is encoded to an observation, and their cross-view likelihood gives the loss. Inference (bottom): a single view is encoded and passed through $g_\phi$, and the likelihood is evaluated at the posterior mean, not by sampling. Training is stochastic and needs a pair of views; a new input is scored in one deterministic pass.</p>
+    </div>
+  </div>
+
+  <p>The score is a deterministic plug-in evaluation using $(\boldsymbol\mu,\boldsymbol\sigma^2)$, not a latent sample. Sampling exists during training only so gradients reach the variances; at test time there are no gradients, and a draw would make the score random. The diagonal posterior provides the parameters needed for a deterministic likelihood evaluation, and evaluating at the posterior mean keeps the score reproducible, which is what a usable uncertainty value, or a detection threshold, requires.</p>
+  <p>The directional NLL has three terms: a fit term, the covariance-weighted angle between the embedding's direction and the mean direction $g_\phi$ infers, $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u$, small when the inferred latent reproduces the embedding and large when it cannot; the normalizer $\tfrac12\log\lvert\Sigma_{\text{tan}}\rvert$, the log-volume of the anisotropic uncertainty; and the curvature correction $\log\lvert J_{\exp}\rvert$, which preserves the normalization of the directional density. A confident, self-consistent embedding scores low; an uncertain or poorly explained one scores high. Spanning the $D-1$ tangent directions, the directional NLL dominates the one-dimensional radial term and carries the signal.</p>
+  <p>This leaves a question the mechanics do not answer: why should conditioning an embedding on its own posterior tell it apart from anything else? The answer is that $g_\phi$ is not trained as an identity map. If it were, every embedding would sit at its own inferred mean, the fit term would vanish, and everything would score the same. Instead, $g_\phi$ is trained to project an embedding onto the data's agreement structure. For in-distribution inputs, the posterior mean and variance tend to be compatible with the embedding geometry learned during training. For off-distribution inputs, that compatibility can fail through a larger fit term, inflated uncertainty, or both.</p>
+</section>
+
+<section>
+  <span class="secnum">Section 7</span>
   <h2>Summary</h2>
-  <p>Non-contrastive SSL minimizes an unnormalized energy, a pointwise distance between a predicted and a target embedding, with collapse held off by added architecture and each input reduced to a single point. VJE normalizes that energy: variational inference on the embeddings, a conditional ELBO whose likelihood is a heavy-tailed Student-$t$ split into a normalized directional factor on the sphere and a radial factor, with one per-feature variance vector shared between posterior and likelihood. The pointwise methods are recovered in its fixed-variance, point-estimate limit. The asymmetry they add to prevent collapse VJE instead derives from the likelihood's need for a fixed observation; what the normalized objective adds is anisotropic, representation-space uncertainty and a density on embeddings, so likelihood-based scoring follows from the model rather than separate machinery.</p>
+  <p>Non-contrastive SSL methods predominantly minimize an unnormalized energy, a pointwise distance between a predicted and a target embedding, with collapse held off by heuristic architectural asymmetries or regularization penalties, and each input mapped to a single point in the embedding space. VJE normalizes that energy: variational inference on the embeddings, a conditional ELBO whose likelihood is a heavy-tailed Student-$t$ split into a normalized directional factor on the sphere and a radial factor, with a per-feature variance vector shared between posterior and likelihood. The fixed-target asymmetry used by related methods has a probabilistic interpretation in VJE: the target is the observation being conditioned on, so gradients do not flow through it. What the objective yields is anisotropic, representation-space uncertainty and a density on embeddings intrinsic to training, so uncertainty estimates follow from the model rather than separate, post-hoc machinery.</p>
 </section>
 
 <section>
@@ -521,6 +613,38 @@ function buildArch(){
     +rbox(LOSS,'',LOSSF,LINE)
     +`<text x="${LOSS.cx}" y="${LOSS.cy+4}" fill="${INK}" font-size="11.5" text-anchor="middle" ${FT}>\u2113 = <tspan fill="${ACC}" font-weight="600">\u2212log p(y | s)</tspan> + <tspan fill="${ACC2}" font-weight="600">KL( q \u2016 N(0, I) )</tspan></text>`
     +tau(X,ENC1,-1)+tau(X,ENC2,1);
+}
+
+function buildPipelines(){
+  const INK='#24231F', MUT='#746F66', LINE='#D2C8BA', FILL='#FAF9F6',
+        ACC='#536F72', ACCINK='#425D60', ACCF='#D7E4E3';
+  const txt=(x,y,t,f,sz,w,anc,it)=>`<text x="${x}" y="${y}" fill="${f}" font-size="${sz}" ${w?'font-weight="'+w+'"':''} ${it?'font-style="italic"':''} text-anchor="${anc||'middle'}" ${FT}>${t}</text>`;
+  const ln=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${MUT}" stroke-width="1.6" stroke-linecap="round"/>`;
+  const cv=(d)=>`<path d="${d}" fill="none" stroke="${MUT}" stroke-width="1.6"/>`;
+  const ah=(x,y)=>`<polygon points="${x},${y} ${x-8},${y-4.2} ${x-8},${y+4.2}" fill="${MUT}"/>`;
+  const chip=(cx,cy,w,h,t,acc)=>`<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="${h/2}" fill="${acc?ACCF:FILL}" stroke="${acc?ACC:LINE}" stroke-width="1.3"/>`+txt(cx,cy+4,t,acc?ACCINK:INK,11.5,acc?700:600);
+  const sub=(t)=>`<tspan baseline-shift="sub" font-size="8">${t}</tspan>`;
+  const box=(cx,cy,w,h,t)=>`<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="9" fill="${FILL}" stroke="${LINE}" stroke-width="1.3"/>`+txt(cx,cy+4,t,INK,11.5,600);
+  let s=`<rect x="0" y="0" width="520" height="270" rx="28" fill="#F8F6F2"/>`;
+  s+=`<line x1="38" y1="156" x2="482" y2="156" stroke="${LINE}" stroke-width="1" stroke-dasharray="2 4"/>`;
+  // training: one input -> two views; online view -> g_phi -> sample, target view -> observation; cross-view likelihood -> loss
+  s+=txt(40,34,'Training',INK,12.5,700,'start');
+  s+=cv('M 66 82 C 84 82 92 62 103 62')+ah(111,62);
+  s+=cv('M 66 82 C 84 82 92 104 103 104')+ah(111,104);
+  s+=ln(169,62,194,62)+ah(202,62)+ln(246,62,281,62)+ah(289,62);
+  s+=ln(169,104,281,104)+ah(289,104);
+  s+=cv('M 339 62 C 382 62 400 82 420 82')+cv('M 339 104 C 382 104 400 82 420 82')+ah(428,82);
+  s+=chip(46,82,40,24,'input')+box(140,82,58,66,'encoder')+box(224,62,44,28,'g'+sub('\u03c6'))+chip(314,62,50,26,'sample',true)+chip(314,104,50,26,'target')+chip(454,82,52,28,'loss',true);
+  s+=txt(256,138,'stochastic, cross-view',MUT,10,null,'middle',true);
+  // inference: single view -> encoder -> g_phi -> mean -> likelihood
+  s+=txt(40,172,'Inference',INK,12.5,700,'start');
+  s+=ln(66,210,103,210)+ah(111,210);
+  s+=ln(169,210,194,210)+ah(202,210);
+  s+=ln(246,210,283,210)+ah(291,210);
+  s+=ln(337,210,404,210)+ah(412,210);
+  s+=chip(46,210,40,24,'input')+box(140,210,58,30,'encoder')+box(224,210,44,28,'g'+sub('\u03c6'))+chip(314,210,46,26,'mean',true)+chip(452,210,80,28,'likelihood',true);
+  s+=txt(256,244,'deterministic, single-view',MUT,10,null,'middle',true);
+  return s;
 }
 
 // geodesic log map
@@ -861,6 +985,7 @@ document.getElementById('sl-couple-rz').addEventListener('input',e=>{S.couple.rz
 document.getElementById('sl-tdf').addEventListener('input',e=>{S.tdf.nu=+e.target.value;renderFig(figs.tdf);});
 
 document.getElementById('svg-arch').innerHTML=buildArch();
+document.getElementById('svg-pipelines').innerHTML=buildPipelines();
 
 // reduced-motion: start paused
 if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
