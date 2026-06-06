@@ -96,7 +96,7 @@
   .mast-meta a:hover{text-decoration:underline}
   hr.mast-rule{border:none;border-top:1px solid var(--rule);max-width:var(--measure);margin:1.7rem auto 0}
 
-  main{counter-reset:sec fig}
+  main{counter-reset:sec fig choice}
   section{padding:1.5rem 0 .4rem;animation:rise .55s ease both}
   @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){section{animation:none}}
@@ -105,6 +105,8 @@
   h2{font-family:var(--serif);font-weight:700;font-size:1.42rem;line-height:1.22;margin:1.7rem 0 .7rem;color:var(--ink)}
   h2::before{counter-increment:sec;content:counter(sec) "\00a0\00a0"}
   h3{font-family:var(--serif);font-weight:700;font-size:1.16rem;margin:1.5rem 0 .5rem;color:var(--ink)}
+  h3.choice{font-weight:400;font-style:italic}
+  h3.choice::before{counter-increment:choice;content:counter(choice,lower-roman) ".\00a0";color:var(--ink-faint);font-weight:400}
   h4{font-family:var(--serif);font-weight:700;font-size:1.01rem;margin:1.15rem 0 .15rem;color:var(--ink)}
   h5{font-family:var(--serif);font-weight:700;font-size:.98rem;margin:1rem 0 .15rem;color:var(--ink-soft)}
   .step-goal{font-style:italic;font-weight:400;font-size:.9rem;color:var(--ink-faint);margin:0 0 .65rem}
@@ -256,7 +258,7 @@
     <li><strong>Contrastive</strong> methods (e.g., SimCLR<sup class="cite"><a href="#ref-1">1</a></sup>, MoCo<sup class="cite"><a href="#ref-2">2</a></sup>) pull the two views of an image together and push views of different images apart. Because the setting is unsupervised, the negatives are not labelled examples; they are constructed heuristically, typically from other samples in a batch or memory queue.</li>
     <li><strong>Non-contrastive</strong> methods use no negatives. Predictive variants (e.g., BYOL<sup class="cite"><a href="#ref-3">3</a></sup>, SimSiam<sup class="cite"><a href="#ref-4">4</a></sup>, JEPA<sup class="cite"><a href="#ref-5">5</a></sup>) predict one view's embedding from the other and prevent collapse through architectural asymmetry: a predictor on one branch with a stop-gradient or exponential-moving-average (EMA) target encoder on the other; redundancy-reduction variants (e.g., VICReg<sup class="cite"><a href="#ref-6">6</a></sup>, Barlow Twins<sup class="cite"><a href="#ref-7">7</a></sup>) instead prevent collapse with loss terms that decorrelate features or maintain their variance.</li>
   </ul>
-  <p>At a high level, non-contrastive methods replace labels with agreement between two views of the same input. In the predictive case this is usually written as a pointwise discrepancy between a prediction from one view and a target representation from the other,</p>
+  <p>At a high level, non-contrastive methods replace labels with agreement between two views of the same input. In the predictive case this is usually written as a pointwise discrepancy between a prediction from one view and a target representation from the other:</p>
   <div class="eq">$$\mathcal L_{\text{pred}}(x_1,x_2)=d\big(h(f_\theta(x_1)),\,f_\xi(x_2)\big),$$</div>
   <p>where $d$ is a cosine or Euclidean distance, $h$ is a predictor, and $f_\xi$ a detached target encoder. The distance plays the role of an energy, low when the views agree. Such methods are usually called energy-based, but the term is narrower in use than in principle: a normalized density is itself an energy, namely $-\log p$, so what these objectives actually commit to is leaving the energy unnormalized. That choice, of which the Joint Embedding Predictive Architecture (JEPA<sup class="cite"><a href="#ref-5">5</a></sup>) is a prominent restatement, carries two structural consequences regardless of framing. The first is that some device is needed to rule out collapse, the constant map onto a single point, but the choice of device is heuristic, not dictated by the objective: the predictive asymmetry, the redundancy-reduction penalties, or the isotropic-Gaussian matching of LeJEPA<sup class="cite"><a href="#ref-8">8</a></sup> (SIGReg), the last argued to be principled but only relative to the loss and assumptions it adopts. The second is that each input becomes a single point, so the representation cannot express how certain that point is, a quantity that may in fact be the most valuable in label-scarce settings.</p>
   <p>Probabilistic reformulations of SSL exist, but they usually reinterpret an existing deterministic objective rather than building the training criterion as a representation-space likelihood. VI-SimSiam<sup class="cite"><a href="#ref-9">9</a></sup>, which reads SimSiam as variational inference with a concentration on each prediction, is one such reformulation. Variational Joint Embedding (VJE) changes the objective itself: it replaces the plain distance with a latent-variable objective in representation space, derived from the spherical construction used in the paper. The model assigns a separate uncertainty to each feature, and it treats each embedding as a unit direction together with a scalar magnitude. The fixed-target asymmetry has a probabilistic interpretation in VJE: a likelihood conditions on an observation, that observation is fixed rather than optimized, and the stop-gradient on the target is what enforces it, giving the usual stop-gradient mechanism a modelling role rather than treating it purely as an architectural trick. The devices with no first-principles role, the projection head being the obvious one, are simply absent. Aside from those, the architectural motifs are shared, so the pointwise methods are recovered as limiting cases of VJE's objective.</p>
@@ -304,7 +306,7 @@
   <span class="secnum">Section 4</span>
   <h2>The likelihood</h2>
   <p>The likelihood $p(y_j\mid\mathbf s)$ follows from one observation about embeddings and three design choices.</p>
-  <h3>Decoupling direction and magnitude</h3>
+  <h3 class="choice">Decoupling direction and magnitude</h3>
   <p>In supervised learning, labels specify which aspects of representation geometry the optimizer should organize: class separation, margins, regression structure, or whatever the task requires. In non-contrastive SSL, that signal is absent. The objective only says that two views of the same input should agree, but it does not by itself specify whether agreement should be carried by angular structure, embedding norm, or some mixture of the two. This is one reason regularization-based SSL methods add explicit geometric constraints: they use a generic matching objective, then constrain the representation through variance, covariance, or redundancy-reduction terms so that the optimizer cannot satisfy view agreement through degenerate geometry.</p>
   <p>VJE addresses the same under-specification inside the likelihood itself. Rather than matching raw embeddings and then imposing separate geometric penalties, it starts from the fact that a vector $\mathbf z\in\mathbb R^D$ carries a direction and a magnitude. A single Gaussian on $\mathbf z$ entangles the two and is sensitive to changes in the embedding norm, so VJE separates the observation into directional and radial components: angular agreement is scored on the unit sphere, magnitude consistency is scored by a separate radial term, and directional uncertainty lives in the tangent geometry. The directional/radial likelihood is therefore not merely a modelling choice; it is a way of making the unsupervised predictive objective geometrically better posed.</p>
   <p>Formally, the observation is written as $y=(\hat{\mathbf z},\lVert\mathbf z\rVert)$. The directional component is modelled on the unit sphere $\mathbb S^{D-1}$, while the radial component is modelled by a one-dimensional term on the norm mismatch. The latent is decomposed the same way, giving the radial residual $\Delta r_{ij}=\lVert\mathbf z_j\rVert-\lVert\mathbf s_i\rVert$.</p>
@@ -332,7 +334,7 @@
     </div>
   </div>
 
-  <h3>Bounding gradients</h3>
+  <h3 class="choice">Bounding gradients</h3>
   <p>Both factors are Student-$t$ distributions sharing a degrees-of-freedom parameter $\nu&gt;0$. Heavy tails make the objective robust to hard or noisy pairs: large angular errors do not dominate training as they would under a Gaussian. As $\nu\to\infty$ the Student-$t$ approaches a Gaussian, so this is a strict generalization with one tunable parameter.</p>
   <div class="figblock">
     <div class="plate">
@@ -352,7 +354,7 @@
       <p><strong>Why it matters.</strong> The Gaussian gradient grows without bound, so a single large residual dominates the step. The Student-$t$ gradient rises, peaks near $r=\sqrt{\nu}$, then redescends toward zero, automatically down-weighting hard or mislabelled pairs. Both the directional and radial factors share this one $\nu$, the single knob trading robustness ($\nu\!\to\!1$, the Cauchy limit) against Gaussian behaviour ($\nu\!\to\!\infty$).</p>
     </div>
   </div>
-  <h3>Tying uncertainty to the likelihood</h3>
+  <h3 class="choice">Tying uncertainty to the likelihood</h3>
   <p>The inference network $g_\phi$ produces a single variance vector $\boldsymbol\sigma_i^2$ that the model uses in two roles. As the posterior covariance $\operatorname{diag}(\boldsymbol\sigma_i^2)$ it is how unsure the inference is about the latent; as the likelihood scale $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ it is how tightly the target direction must be matched. Sharing the same vector across both is what turns it into uncertainty rather than a free scale: a feature the network is unsure of (large $\sigma^2$) both widens the posterior and loosens the match, so disagreement there is penalized less, while a confident feature tightens both. Were the likelihood given its own separate scale, the two could drift apart and the inferred spread would bear no necessary relation to the penalty actually applied. The scale is per-dimension, so the uncertainty is anisotropic, and it is read directly from $g_\phi$ rather than from any auxiliary output.</p>
 
   <h3>Deriving the directional term</h3>
@@ -445,7 +447,7 @@
   </div>
   <p>The radial term $\ell_{\text{rad}}$ is a one-dimensional Student-$t$ negative log-likelihood on $\Delta r_{ij}$, which maintains magnitude consistency without the norm influencing the directional term.</p>
 
-  <h3>Completing the objective</h3>
+  <h3>Forming the variational objective</h3>
   <p>The negative log-likelihood, symmetrized over both directions (paper Eq. 4), is</p>
   <div class="eq">$$\mathcal L_{\text{NLL}}=\tfrac12\!\!\sum_{(i,j)\in\{(1,2),(2,1)\}}\!\!\mathbb E_{\mathbf s_i\sim q_i}\Big[\ell_{\text{dir}}\big(\operatorname{sg}(\hat{\mathbf z}_j),\hat{\mathbf s}_i;\boldsymbol\sigma_i^2\big)+\ell_{\text{rad}}\big(\Delta r_{ij}\big)\Big],$$</div>
   <p>where $\operatorname{sg}(\cdot)$ is the stop-gradient that fixes the observation the likelihood conditions on. The complete objective adds the prior-matching term of the variational bound, the KL toward the standard Gaussian prior $p(\mathbf s)=\mathcal N(\mathbf 0,\mathbf I)$, which anchors each posterior both geometrically, to the origin and a unit scale, and probabilistically, to a proper, well-defined distribution:</p>
