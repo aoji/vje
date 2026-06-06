@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-CA">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Joint Embedding Variational Bayes: an interactive introduction</title>
-<meta name="description" content="An interactive, from-fundamentals introduction to Variational Joint Embedding (VJE) by Oji & Fieguth (TMLR 2026), with the directional likelihood derived and visualized step by step.">
-<meta name="author" content="Oji & Fieguth">
+<title>Joint Embedding Variational Bayes: Interactive Companion</title>
+<meta name="description" content="An interactive companion to Joint Embedding Variational Bayes (VJE) by Oji & Fieguth, TMLR 2026.">
+<meta name="author" content="Amin Oji; Paul Fieguth">
 <link rel="canonical" href="https://aoji.github.io/vje/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Joint Embedding Variational Bayes">
-<meta property="og:locale" content="en_US">
+<meta property="og:locale" content="en_CA">
 <meta property="og:url" content="https://aoji.github.io/vje/">
-<meta property="og:title" content="Joint Embedding Variational Bayes: an interactive introduction">
-<meta property="og:description" content="From-fundamentals walkthrough of VJE, with the directional likelihood (log-map, Schur complement, exponential-map Jacobian) shown step by step.">
+<meta property="og:title" content="Joint Embedding Variational Bayes: Interactive Companion">
+<meta property="og:description" content="An interactive companion to Joint Embedding Variational Bayes (VJE) by Oji & Fieguth, TMLR 2026.">
 <meta property="og:image" content="https://aoji.github.io/vje/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Joint Embedding Variational Bayes, an interactive companion (TMLR 2026)">
+<meta property="og:image:alt" content="Joint Embedding Variational Bayes interactive companion (TMLR 2026)">
 <meta property="article:author" content="Amin Oji">
 <meta property="article:author" content="Paul Fieguth">
 <meta property="article:tag" content="self-supervised learning">
@@ -25,8 +25,8 @@
 <meta property="article:tag" content="variational inference">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Joint Embedding Variational Bayes: an interactive introduction">
-<meta name="twitter:description" content="From-fundamentals walkthrough of VJE, with the directional likelihood shown step by step.">
+<meta name="twitter:title" content="Joint Embedding Variational Bayes: Interactive Companion">
+<meta name="twitter:description" content="An interactive companion to Joint Embedding Variational Bayes (VJE) by Oji & Fieguth, TMLR 2026.">
 <meta name="twitter:image" content="https://aoji.github.io/vje/og.png">
 
 <script type="application/ld+json">
@@ -34,9 +34,9 @@
   "@context": "https://schema.org",
   "@type": "ScholarlyArticle",
   "name": "Joint Embedding Variational Bayes",
-  "headline": "Joint Embedding Variational Bayes: an interactive introduction",
-  "description": "An interactive, from-fundamentals introduction to Variational Joint Embedding (VJE), deriving and visualizing the directional likelihood (geodesic log-map, Schur complement, exponential-map Jacobian) step by step.",
-  "inLanguage": "en",
+  "headline": "Joint Embedding Variational Bayes: Interactive Companion",
+  "description": "An interactive companion to Joint Embedding Variational Bayes (VJE) by Oji & Fieguth, TMLR 2026.",
+  "inLanguage": "en-CA",
   "url": "https://aoji.github.io/vje/",
   "image": "https://aoji.github.io/vje/og.png",
   "datePublished": "2026",
@@ -51,7 +51,7 @@
     "https://github.com/aoji/vje"
   ],
   "identifier": "arXiv:2602.05639",
-  "keywords": "self-supervised learning, representation learning, variational inference, joint embedding, JEPA, ELBO, directional statistics"
+  "keywords": "self-supervised learning, representation learning, variational inference, joint embedding, JEPA, ELBO, directional statistics, representation-space likelihood, uncertainty modelling"
 }
 </script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -85,7 +85,7 @@
   .wrap{max-width:var(--measure);margin:0 auto;padding:0 1.5rem}
   ::selection{background:rgba(83,111,114,.14)}
 
-  /* masthead: TMLR first-page feel: centered title, authors, venue */
+  /* masthead: TMLR first-page feel: centred title, authors, venue */
   header.mast{max-width:var(--measure);margin:0 auto;padding:3.4rem 1.5rem 0;text-align:center}
   .venue{font-style:italic;font-size:.95rem;color:#46433D;margin:0 0 1.5rem}
   h1.title{font-family:var(--serif);font-weight:700;font-size:clamp(1.95rem,4.5vw,2.5rem);line-height:1.16;letter-spacing:0;margin:0;color:var(--ink)}
@@ -101,11 +101,12 @@
   @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){section{animation:none}}
 
-  .secnum{display:none}                       /* numbering now lives in the heading */
+  .secnum{display:none}                      
   h2{font-family:var(--serif);font-weight:700;font-size:1.42rem;line-height:1.22;margin:1.7rem 0 .7rem;color:var(--ink)}
   h2::before{counter-increment:sec;content:counter(sec) "\00a0\00a0"}
   h3{font-family:var(--serif);font-weight:700;font-size:1.16rem;margin:1.5rem 0 .5rem;color:var(--ink)}
   h4{font-family:var(--serif);font-weight:700;font-size:1.01rem;margin:1.15rem 0 .15rem;color:var(--ink)}
+  h5{font-family:var(--serif);font-weight:700;font-size:.98rem;margin:1rem 0 .15rem;color:var(--ink-soft)}
   p{margin:0 0 .95rem}
   main p,main li{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
   strong{font-weight:700;color:var(--ink)}
@@ -257,7 +258,7 @@
   <p>At a high level, non-contrastive methods replace labels with agreement between two views of the same input. In the predictive case this is usually written as a pointwise discrepancy between a prediction from one view and a target representation from the other,</p>
   <div class="eq">$$\mathcal L_{\text{pred}}(x_1,x_2)=d\big(h(f_\theta(x_1)),\,f_\xi(x_2)\big),$$</div>
   <p>where $d$ is a cosine or Euclidean distance, $h$ is a predictor, and $f_\xi$ a detached target encoder. The distance plays the role of an energy, low when the views agree. Such methods are usually called energy-based, but the term is narrower in use than in principle: a normalized density is itself an energy, namely $-\log p$, so what these objectives actually commit to is leaving the energy unnormalized. That choice, of which the Joint Embedding Predictive Architecture (JEPA<sup class="cite"><a href="#ref-5">5</a></sup>) is a prominent restatement, carries two structural consequences regardless of framing. The first is that some device is needed to rule out collapse, the constant map onto a single point, but the choice of device is heuristic, not dictated by the objective: the predictive asymmetry, the redundancy-reduction penalties, or the isotropic-Gaussian matching of LeJEPA<sup class="cite"><a href="#ref-8">8</a></sup> (SIGReg), the last argued to be principled but only relative to the loss and assumptions it adopts. The second is that each input becomes a single point, so the representation cannot express how certain that point is, a quantity that may in fact be the most valuable in label-scarce settings.</p>
-  <p>Probabilistic reformulations of SSL exist, but they usually reinterpret an existing deterministic objective rather than building the training criterion as a representation-space likelihood. VI-SimSiam<sup class="cite"><a href="#ref-9">9</a></sup>, which reads SimSiam as variational inference with a concentration on each prediction, is one such reformulation. Variational Joint Embedding (VJE) changes the objective itself: it replaces the plain distance with a latent-variable objective in representation space, derived from the spherical construction used in the paper. The model assigns a separate uncertainty to each feature, and it treats each embedding as a unit direction together with a scalar magnitude. The fixed-target asymmetry has a probabilistic interpretation in VJE: a likelihood conditions on an observation, that observation is fixed rather than optimized, and the stop-gradient on the target is what enforces it, giving the usual stop-gradient mechanism a modeling role rather than treating it purely as an architectural trick. The devices with no first-principles role, the projection head being the obvious one, are simply absent. Aside from those, the architectural motifs are shared, so the pointwise methods are recovered as limiting cases of VJE's objective.</p>
+  <p>Probabilistic reformulations of SSL exist, but they usually reinterpret an existing deterministic objective rather than building the training criterion as a representation-space likelihood. VI-SimSiam<sup class="cite"><a href="#ref-9">9</a></sup>, which reads SimSiam as variational inference with a concentration on each prediction, is one such reformulation. Variational Joint Embedding (VJE) changes the objective itself: it replaces the plain distance with a latent-variable objective in representation space, derived from the spherical construction used in the paper. The model assigns a separate uncertainty to each feature, and it treats each embedding as a unit direction together with a scalar magnitude. The fixed-target asymmetry has a probabilistic interpretation in VJE: a likelihood conditions on an observation, that observation is fixed rather than optimized, and the stop-gradient on the target is what enforces it, giving the usual stop-gradient mechanism a modelling role rather than treating it purely as an architectural trick. The devices with no first-principles role, the projection head being the obvious one, are simply absent. Aside from those, the architectural motifs are shared, so the pointwise methods are recovered as limiting cases of VJE's objective.</p>
 </section>
 
 <section>
@@ -302,10 +303,10 @@
   <span class="secnum">Section 4</span>
   <h2>The likelihood</h2>
   <p>The likelihood $p(y_j\mid\mathbf s)$ follows from one observation about embeddings and three design choices.</p>
-  <h4>The structure of an embedding.</h4>
-  <p>A vector $\mathbf z\in\mathbb R^D$ carries a direction and a magnitude. A single Gaussian on $\mathbf z$ entangles the two and is sensitive to changes in the embedding norm, so VJE models angular agreement and magnitude agreement as separate factors, each with its own scale.</p>
-  <h4>Direction and magnitude decomposition.</h4>
-  <p>The observation is written as a direction and a length, $y=(\hat{\mathbf z},\lVert\mathbf z\rVert)$, and the likelihood is factored into a directional term on the unit sphere $\mathbb S^{D-1}$ and a one-dimensional radial term. The latent is decomposed the same way, giving the radial residual $\Delta r_{ij}=\lVert\mathbf z_j\rVert-\lVert\mathbf s_i\rVert$.</p>
+  <h3>Decoupling direction and magnitude.</h3>
+  <p>In supervised learning, labels specify which aspects of representation geometry the optimizer should organize: class separation, margins, regression structure, or whatever the task requires. In non-contrastive SSL, that signal is absent. The objective only says that two views of the same input should agree, but it does not by itself specify whether agreement should be carried by angular structure, embedding norm, or some mixture of the two. This is one reason regularization-based SSL methods add explicit geometric constraints: they use a generic matching objective, then constrain the representation through variance, covariance, or redundancy-reduction terms so that the optimizer cannot satisfy view agreement through degenerate geometry.</p>
+  <p>VJE addresses the same under-specification inside the likelihood itself. Rather than matching raw embeddings and then imposing separate geometric penalties, it starts from the fact that a vector $\mathbf z\in\mathbb R^D$ carries a direction and a magnitude. A single Gaussian on $\mathbf z$ entangles the two and is sensitive to changes in the embedding norm, so VJE separates the observation into directional and radial components: angular agreement is scored on the unit sphere, magnitude consistency is scored by a separate radial term, and directional uncertainty lives in the tangent geometry. The directional/radial likelihood is therefore not merely a modelling choice; it is a way of making the unsupervised predictive objective geometrically better posed.</p>
+  <p>Formally, the observation is written as $y=(\hat{\mathbf z},\lVert\mathbf z\rVert)$. The directional component is modelled on the unit sphere $\mathbb S^{D-1}$, while the radial component is modelled by a one-dimensional term on the norm mismatch. The latent is decomposed the same way, giving the radial residual $\Delta r_{ij}=\lVert\mathbf z_j\rVert-\lVert\mathbf s_i\rVert$.</p>
   <div class="figblock">
     <div class="plate">
       <div class="plate-head">
@@ -325,12 +326,12 @@
     </div>
     <div class="caption">
       <div class="cap-label">Direction-norm entanglement</div>
-      <p><strong>Shown.</strong> The same vector mismatch is scored two ways, with the predicted norm fixed at $\lVert\mathbf s\rVert=1$ and the sliders setting the angular mismatch $\theta$ and the target norm $\lVert\mathbf z\rVert$. <em>Left,</em> the raw squared distance $\lVert\mathbf z-\mathbf s\rVert^2$, the single quantity a Euclidean loss minimizes: $\mathbf s$ is the fixed reference, $\mathbf z$ swings by $\theta$ and grows with $\lVert\mathbf z\rVert$, and the chord between the tips is what is penalized. <em>Middle and right,</em> the VJE factorization scores the same mismatch as a directional term on the unit sphere, set by $\theta$ alone, and a radial term, set by $\Delta r=\lVert\mathbf z\rVert-\lVert\mathbf s\rVert$ alone. The bars share one scale, so it is their relative sizes, not the absolute numbers, that matter.</p>
+      <p><strong>Shown.</strong> The same vector mismatch is scored two ways, with the predicted norm fixed at $\lVert\mathbf s\rVert=1$ and the sliders setting the angular mismatch $\theta$ and the target norm $\lVert\mathbf z\rVert$. <em>Left,</em> the raw squared distance $\lVert\mathbf z-\mathbf s\rVert^2$, the single quantity a Euclidean loss minimizes: $\mathbf s$ is the fixed reference, $\mathbf z$ swings by $\theta$ and grows with $\lVert\mathbf z\rVert$, and the chord between the tips is what is penalized. <em>Middle and right,</em> the VJE factorization scores the same mismatch as a directional term on the unit sphere, whose geometric residual is set by $\theta$, and a radial term, whose residual is set by $\Delta r=\lVert\mathbf z\rVert-\lVert\mathbf s\rVert$. The bars share one scale, so it is their relative sizes, not the absolute numbers, that matter.</p>
       <p><strong>Why it matters.</strong> The raw squared error expands as $\lVert\mathbf z-\mathbf s\rVert^2=(\Delta r)^2+2\lVert\mathbf z\rVert\lVert\mathbf s\rVert(1-\cos\theta)$: a single scalar whose angular term is scaled by the norm. Direction and magnitude may carry different semantics, so scoring them under one scale and optimizing jointly can lead to pathologies: the score gives no way to weight the two separately, and the norm-scaling entangles their gradients, so the optimizer cannot reduce angular and radial disagreement independently. Progress on one can then come at the expense of the other, with the two effects traded off under one scalar penalty. The problem grows with dimension: the radial residual is one coordinate while direction spans the remaining $D-1$, so a single isotropic scale is applied to both.</p>
     </div>
   </div>
 
-  <h4>Heavy tails.</h4>
+  <h3>Bounding gradients.</h3>
   <p>Both factors are Student-$t$ distributions sharing a degrees-of-freedom parameter $\nu&gt;0$. Heavy tails make the objective robust to hard or noisy pairs: large angular errors do not dominate training as they would under a Gaussian. As $\nu\to\infty$ the Student-$t$ approaches a Gaussian, so this is a strict generalization with one tunable parameter.</p>
   <div class="figblock">
     <div class="plate">
@@ -350,7 +351,7 @@
       <p><strong>Why it matters.</strong> The Gaussian gradient grows without bound, so a single large residual dominates the step. The Student-$t$ gradient rises, peaks near $r=\sqrt{\nu}$, then redescends toward zero, automatically down-weighting hard or mislabelled pairs. Both the directional and radial factors share this one $\nu$, the single knob trading robustness ($\nu\!\to\!1$, the Cauchy limit) against Gaussian behaviour ($\nu\!\to\!\infty$).</p>
     </div>
   </div>
-  <h4>Variance sharing.</h4>
+  <h3>Tying uncertainty to the likelihood.</h3>
   <p>The inference network $g_\phi$ produces a single variance vector $\boldsymbol\sigma_i^2$ that the model uses in two roles. As the posterior covariance $\operatorname{diag}(\boldsymbol\sigma_i^2)$ it is how unsure the inference is about the latent; as the likelihood scale $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ it is how tightly the target direction must be matched. Sharing the same vector across both is what turns it into uncertainty rather than a free scale: a feature the network is unsure of (large $\sigma^2$) both widens the posterior and loosens the match, so disagreement there is penalized less, while a confident feature tightens both. Were the likelihood given its own separate scale, the two could drift apart and the inferred spread would bear no necessary relation to the penalty actually applied. The scale is per-dimension, so the uncertainty is anisotropic, and it is read directly from $g_\phi$ rather than from any auxiliary output.</p>
 
   <h3>The directional term</h3>
@@ -372,7 +373,7 @@
       <svg id="svg-log" class="fig" viewBox="0 0 520 420" role="img" aria-label="Geodesic log map: angle theta unrolled to tangent vector u"></svg>
       <div class="controls">
         <button class="pp" id="pp-log">Pause</button>
-        <label class="ctl"><span>angular separation&nbsp;θ</span><input id="sl-log" type="range" min="0.25" max="2.25" step="0.01" value="1.05" disabled><span class="val" id="rd-log">1.05 rad</span></label>
+        <label class="ctl"><span>angular separation&nbsp;$\theta$</span><input id="sl-log" type="range" min="0.25" max="2.25" step="0.01" value="1.05" disabled><span class="val" id="rd-log">1.05 rad</span></label>
       </div>
     </div>
     <div class="caption">
@@ -397,7 +398,7 @@
       <svg id="svg-schur" class="fig" viewBox="0 0 520 420" role="img" aria-label="Schur complement: conditional vs marginal tangent width"></svg>
       <div class="controls">
         <button class="pp" id="pp-schur">Pause</button>
-        <label class="ctl"><span>radial-tangent coupling&nbsp;ρ</span><input id="sl-schur" type="range" min="0" max="0.9" step="0.01" value="0.62" disabled><span class="val" id="rd-schur">ρ = 0.62</span></label>
+        <label class="ctl"><span>radial-tangent coupling&nbsp;$\rho$</span><input id="sl-schur" type="range" min="0" max="0.9" step="0.01" value="0.62" disabled><span class="val" id="rd-schur">ρ = 0.62</span></label>
       </div>
     </div>
     <div class="caption">
@@ -422,7 +423,7 @@
       <svg id="svg-jac" class="fig" viewBox="0 0 520 420" role="img" aria-label="Exponential map area distortion"></svg>
       <div class="controls">
         <button class="pp" id="pp-jac">Pause</button>
-        <label class="ctl"><span>angle&nbsp;θ</span><input id="sl-jac-theta" type="range" min="0.25" max="2.25" step="0.01" value="1.05" disabled><span class="val" id="rd-jac-theta">1.05 rad</span></label>
+        <label class="ctl"><span>angle&nbsp;$\theta$</span><input id="sl-jac-theta" type="range" min="0.25" max="2.25" step="0.01" value="1.05" disabled><span class="val" id="rd-jac-theta">1.05 rad</span></label>
       </div>
     </div>
     <div class="caption">
@@ -435,7 +436,7 @@
   <h4>Assembling the term.</h4>
   <p>The negative logarithm of the tangent-space Student-$t$ supplies the first two terms; the change of variables onto the sphere supplies $\log\lvert J_{\exp}\rvert$. Dropping constants in $\nu$ and $k$ gives the directional negative log-likelihood (paper Eq. 5), with each term traceable to a step above:</p>
   <div class="termmap">
-    <div class="lbl">ℓ_dir, term by term</div>
+    <div class="lbl">$\ell_{\text{dir}}$, term by term</div>
     <div class="eq">$$\ell_{\text{dir}}=\underbrace{\tfrac{\nu+k}{2}\,\log\!\Big(1+\tfrac{Q_{\text{dir}}}{\nu}\Big)}_{\text{angular error $\cdot$ Steps 1 and 2}}\;+\;\underbrace{\tfrac12\log\lvert\Sigma_{\text{tan}}\rvert}_{\text{scale $\cdot$ Step 2}}\;+\;\underbrace{\log\lvert J_{\exp}\rvert}_{\text{curvature $\cdot$ Step 3}},\qquad k=D-1.$$</div>
   </div>
   <p>The radial term $\ell_{\text{rad}}$ is a one-dimensional Student-$t$ negative log-likelihood on $\Delta r_{ij}$, which maintains magnitude consistency without the norm influencing the directional term.</p>
@@ -451,10 +452,10 @@
 <section>
   <span class="secnum">Section 5</span>
   <h2>Training</h2>
-  <p>During training, sampling is essential. Variance centering and the EMA target are optional refinements: variance centering is numerical, while EMA usually improves downstream representation quality.</p>
+  <p>During training, sampling is essential. Variance centring and the EMA target are optional refinements: variance centring is numerical, while EMA usually improves downstream representation quality.</p>
   <ul>
     <li><strong>Sampling.</strong> The latent is drawn by reparameterization, $\mathbf s_i=\boldsymbol\mu_i+\boldsymbol\sigma_i\odot\boldsymbol\varepsilon_i$, so gradients flow through the variances. Sampling is also where posterior variance becomes operational inside the model: changing $\boldsymbol\sigma_i$ changes the latent sample that is scored, so uncertainty affects the representation path itself rather than appearing only as an auxiliary output. One sample per view suffices: with a diagonal posterior the estimator is already low-variance, and adding samples does not measurably change the result (Appendix C.2).</li>
-    <li><strong>Variance centering (optional).</strong> The directional term depends only on the relative per-feature variances, so their overall scale is a flat direction of the loss that carries no angular information. Left free it drifts, and since $\Sigma=\operatorname{diag}(\boldsymbol\sigma^2)$ enters the Mahalanobis term through its inverse, an unbounded drift drives $\boldsymbol\sigma^2$ and $\Sigma^{-1}$ toward over- or underflow, fatal in reduced precision (e.g., fp16). Fixing the geometric mean of $\boldsymbol\sigma^2$ to one (zero-mean log-variances) pins that single mode and holds the variances in a safe range without ad-hoc clipping, leaving the informative anisotropy untouched (Appendix A.2).</li>
+    <li><strong>Variance centring (optional).</strong> The directional term depends only on the relative per-feature variances, so their overall scale is a flat direction of the loss that carries no angular information. Left free it drifts, and since $\Sigma=\operatorname{diag}(\boldsymbol\sigma^2)$ enters the Mahalanobis term through its inverse, an unbounded drift drives $\boldsymbol\sigma^2$ and $\Sigma^{-1}$ toward over- or underflow, fatal in reduced precision (e.g., fp16). Fixing the geometric mean of $\boldsymbol\sigma^2$ to one (zero-mean log-variances) pins that single mode and holds the variances in a safe range without ad-hoc clipping, leaving the informative anisotropy untouched (Appendix A.2).</li>
     <li><strong>EMA target (optional).</strong> A conditional likelihood only needs the target held fixed within each step, which stop-gradient already provides; the model trains stably with stop-gradient alone. Replacing it with an EMA target encoder, $\xi\leftarrow m\,\xi+(1-m)\,\theta$ on a cosine schedule toward $1.0$, supplies the same fixed-target semantics with a smoother, slowly moving target and tends to improve downstream results. It is a refinement, not a stability mechanism.</li>
   </ul>
 </section>
