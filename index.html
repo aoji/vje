@@ -107,6 +107,7 @@
   h3{font-family:var(--serif);font-weight:700;font-size:1.16rem;margin:1.5rem 0 .5rem;color:var(--ink)}
   h4{font-family:var(--serif);font-weight:700;font-size:1.01rem;margin:1.15rem 0 .15rem;color:var(--ink)}
   h5{font-family:var(--serif);font-weight:700;font-size:.98rem;margin:1rem 0 .15rem;color:var(--ink-soft)}
+  .step-goal{font-style:italic;font-weight:400;font-size:.9rem;color:var(--ink-faint);margin:0 0 .65rem}
   p{margin:0 0 .95rem}
   main p,main li{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
   strong{font-weight:700;color:var(--ink)}
@@ -303,7 +304,7 @@
   <span class="secnum">Section 4</span>
   <h2>The likelihood</h2>
   <p>The likelihood $p(y_j\mid\mathbf s)$ follows from one observation about embeddings and three design choices.</p>
-  <h3>Decoupling direction and magnitude.</h3>
+  <h3>Decoupling direction and magnitude</h3>
   <p>In supervised learning, labels specify which aspects of representation geometry the optimizer should organize: class separation, margins, regression structure, or whatever the task requires. In non-contrastive SSL, that signal is absent. The objective only says that two views of the same input should agree, but it does not by itself specify whether agreement should be carried by angular structure, embedding norm, or some mixture of the two. This is one reason regularization-based SSL methods add explicit geometric constraints: they use a generic matching objective, then constrain the representation through variance, covariance, or redundancy-reduction terms so that the optimizer cannot satisfy view agreement through degenerate geometry.</p>
   <p>VJE addresses the same under-specification inside the likelihood itself. Rather than matching raw embeddings and then imposing separate geometric penalties, it starts from the fact that a vector $\mathbf z\in\mathbb R^D$ carries a direction and a magnitude. A single Gaussian on $\mathbf z$ entangles the two and is sensitive to changes in the embedding norm, so VJE separates the observation into directional and radial components: angular agreement is scored on the unit sphere, magnitude consistency is scored by a separate radial term, and directional uncertainty lives in the tangent geometry. The directional/radial likelihood is therefore not merely a modelling choice; it is a way of making the unsupervised predictive objective geometrically better posed.</p>
   <p>Formally, the observation is written as $y=(\hat{\mathbf z},\lVert\mathbf z\rVert)$. The directional component is modelled on the unit sphere $\mathbb S^{D-1}$, while the radial component is modelled by a one-dimensional term on the norm mismatch. The latent is decomposed the same way, giving the radial residual $\Delta r_{ij}=\lVert\mathbf z_j\rVert-\lVert\mathbf s_i\rVert$.</p>
@@ -331,7 +332,7 @@
     </div>
   </div>
 
-  <h3>Bounding gradients.</h3>
+  <h3>Bounding gradients</h3>
   <p>Both factors are Student-$t$ distributions sharing a degrees-of-freedom parameter $\nu&gt;0$. Heavy tails make the objective robust to hard or noisy pairs: large angular errors do not dominate training as they would under a Gaussian. As $\nu\to\infty$ the Student-$t$ approaches a Gaussian, so this is a strict generalization with one tunable parameter.</p>
   <div class="figblock">
     <div class="plate">
@@ -351,14 +352,15 @@
       <p><strong>Why it matters.</strong> The Gaussian gradient grows without bound, so a single large residual dominates the step. The Student-$t$ gradient rises, peaks near $r=\sqrt{\nu}$, then redescends toward zero, automatically down-weighting hard or mislabelled pairs. Both the directional and radial factors share this one $\nu$, the single knob trading robustness ($\nu\!\to\!1$, the Cauchy limit) against Gaussian behaviour ($\nu\!\to\!\infty$).</p>
     </div>
   </div>
-  <h3>Tying uncertainty to the likelihood.</h3>
+  <h3>Tying uncertainty to the likelihood</h3>
   <p>The inference network $g_\phi$ produces a single variance vector $\boldsymbol\sigma_i^2$ that the model uses in two roles. As the posterior covariance $\operatorname{diag}(\boldsymbol\sigma_i^2)$ it is how unsure the inference is about the latent; as the likelihood scale $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ it is how tightly the target direction must be matched. Sharing the same vector across both is what turns it into uncertainty rather than a free scale: a feature the network is unsure of (large $\sigma^2$) both widens the posterior and loosens the match, so disagreement there is penalized less, while a confident feature tightens both. Were the likelihood given its own separate scale, the two could drift apart and the inferred spread would bear no necessary relation to the penalty actually applied. The scale is per-dimension, so the uncertainty is anisotropic, and it is read directly from $g_\phi$ rather than from any auxiliary output.</p>
 
-  <h3>The directional term</h3>
+  <h3>Deriving the directional term</h3>
   <p>The directional factor is a probability density over a point on the unit sphere, namely the target direction $\hat{\mathbf z}_j$. For the symmetric ELBO to be a genuine lower bound, this factor must be a normalized density on the sphere<sup class="cite"><a href="#ref-11">11</a></sup>: it must integrate to one over $\mathbb S^{D-1}$. Two facts make that nontrivial. First, the standard distributions for continuous data are defined on flat Euclidean space $\mathbb R^k$, not on a curved surface. Second, a unit vector in $\mathbb R^D$ has only $D-1$ independent degrees of freedom because of the constraint $\lVert\hat{\mathbf z}\rVert=1$. The construction therefore moves the comparison into a flat space where a Student-$t$ is well defined<sup class="cite"><a href="#ref-12">12</a></sup>, then transports the resulting density back onto the sphere correctly. The three steps below, each interactive, carry this out.</p>
-  <p><strong>Directions, geodesics, and the tangent space.</strong> The natural measure of disagreement between two directions is the <em>angle</em> between them, the length of the shortest arc along the sphere (the geodesic distance<sup class="cite"><a href="#ref-13">13</a></sup>), not the straight-line chord. For a predicted direction $\hat{\mathbf s}$ and a target $\hat{\mathbf z}$, this angle is $\theta=\arccos(\hat{\mathbf s}^\top\hat{\mathbf z})\in[0,\pi]$. At $\hat{\mathbf s}$, the <em>tangent space</em> is the flat hyperplane of vectors orthogonal to $\hat{\mathbf s}$, the local linear approximation of the sphere. Its dimension is $k=D-1$.</p>
+  <p>The natural measure of disagreement between two directions is the <em>angle</em> between them, the length of the shortest arc along the sphere (the geodesic distance<sup class="cite"><a href="#ref-13">13</a></sup>), not the straight-line chord. For a predicted direction $\hat{\mathbf s}$ and a target $\hat{\mathbf z}$, this angle is $\theta=\arccos(\hat{\mathbf s}^\top\hat{\mathbf z})\in[0,\pi]$. At $\hat{\mathbf s}$, the <em>tangent space</em> is the flat hyperplane of vectors orthogonal to $\hat{\mathbf s}$, the local linear approximation of the sphere. Its dimension is $k=D-1$.</p>
 
-  <h4>Step 1: the geodesic log-map (flattening the disagreement).</h4>
+  <h4>Step 1: the geodesic log-map</h4>
+  <div class="step-goal">Flattening the angular error</div>
   <p>The logarithmic map at $\hat{\mathbf s}$ sends the target direction to a tangent vector that points from $\hat{\mathbf s}$ toward $\hat{\mathbf z}$ along the sphere and whose length equals the angle between them:</p>
   <div class="eq">$$\mathbf u=\log_{\hat{\mathbf s}}(\hat{\mathbf z})=\theta\,\frac{(\mathbf I-\hat{\mathbf s}\hat{\mathbf s}^\top)\,\hat{\mathbf z}}{\big\lVert(\mathbf I-\hat{\mathbf s}\hat{\mathbf s}^\top)\,\hat{\mathbf z}\big\rVert},\qquad \lVert\mathbf u\rVert=\theta.$$</div>
   <p>The projection $(\mathbf I-\hat{\mathbf s}\hat{\mathbf s}^\top)\hat{\mathbf z}$ removes the component along $\hat{\mathbf s}$, leaving the part of $\hat{\mathbf z}$ in the tangent plane; normalizing and scaling by $\theta$ gives a flat vector whose magnitude is the angular error. The inverse, the exponential map, returns it to the sphere: $\exp_{\hat{\mathbf s}}(\mathbf u)=\cos\lVert\mathbf u\rVert\,\hat{\mathbf s}+\sin\lVert\mathbf u\rVert\,\mathbf u/\lVert\mathbf u\rVert$.</p>
@@ -367,23 +369,24 @@
     <div class="plate">
       <div class="plate-head">
         <span class="step">Step 1</span>
-        <span class="step-name">Geodesic log map</span>
+        <span class="step-name">Geodesic log-map</span>
         <span class="produces">produces the residual&nbsp;$\mathbf u$</span>
       </div>
-      <svg id="svg-log" class="fig" viewBox="0 0 520 420" role="img" aria-label="Geodesic log map: angle theta unrolled to tangent vector u"></svg>
+      <svg id="svg-log" class="fig" viewBox="0 0 520 420" role="img" aria-label="Geodesic log-map: angle theta unrolled to tangent vector u"></svg>
       <div class="controls">
         <button class="pp" id="pp-log">Pause</button>
         <label class="ctl"><span>angular separation&nbsp;$\theta$</span><input id="sl-log" type="range" min="0.25" max="2.25" step="0.01" value="1.05" disabled><span class="val" id="rd-log">1.05 rad</span></label>
       </div>
     </div>
     <div class="caption">
-      <div class="cap-label">Geodesic log map</div>
+      <div class="cap-label">Geodesic log-map</div>
       <p><strong>Shown.</strong> The predicted mean direction $\hat{\mathbf s}$ and target $\hat{\mathbf z}$ on the sphere (cross-section). The blue arrow is $\mathbf u=\log_{\hat{\mathbf s}}(\hat{\mathbf z})$, the geodesic arc unrolled into the tangent plane, drawn at the same scale as the arc so $\lVert\mathbf u\rVert=\theta$. The slider is $\theta=\arccos(\hat{\mathbf s}^\top\hat{\mathbf z})$; the faint dashed lines carry intermediate points of the arc onto the tangent line, the unrolling that defines $\mathbf u$.</p>
       <p><strong>Where it enters $\ell_{\text{dir}}$.</strong> $\mathbf u$ is the directional residual. It is squared in the Mahalanobis form $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u$, which is the argument of the first term of $\ell_{\text{dir}}$, $\tfrac{\nu+k}{2}\log(1+Q_{\text{dir}}/\nu)$. Larger $\theta$ lengthens $\mathbf u$ and raises $Q_{\text{dir}}$, but the directional NLL grows only logarithmically, because the factor is Student-$t$, not Gaussian.</p>
     </div>
   </div>
 
-  <h4>Step 2: the tangent-space scale (a Schur-complement restriction).</h4>
+  <h4>Step 2: the tangent-space scale</h4>
+  <div class="step-goal">Conditioning on the radial coordinate</div>
   <p>A Student-$t$ also needs a scale matrix, and it must live in the tangent space. The model supplies $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ in the full $D$-dimensional embedding space, but the tangent space is the $(D-1)$-dimensional hyperplane orthogonal to $\hat{\mathbf s}$. The remaining direction, along $\hat{\mathbf s}$, is the radial (magnitude) direction, which is handled by the radial term rather than the directional scale. Writing $\Sigma$ in a radial ($r$) / tangent ($t$) frame with blocks $\Sigma_{tt}$, $\Sigma_{rr}$, and cross-block $\Sigma_{tr}$, the tangent covariance after conditioning on the radial coordinate is the Schur complement<sup class="cite"><a href="#ref-14">14</a></sup></p>
   <div class="eq">$$\Sigma_{\text{tan}}=\Sigma_{tt}-\Sigma_{tr}\,\Sigma_{rr}^{-1}\,\Sigma_{tr}^{\top}.$$</div>
   <p>The radial direction is one-dimensional, so $\Sigma_{rr}$ is a scalar and the Schur complement subtracts a rank-one correction from $\Sigma_{tt}$. Simply deleting the radial row and column is not enough because $\hat{\mathbf s}$ is generally not axis-aligned: in the radial-tangent frame, the diagonal $\Sigma$ can have cross terms $\Sigma_{tr}$. The covariance-weighted angular error is then $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u$, anisotropic because $\Sigma_{\text{tan}}$ is built from the per-feature variances.</p>
@@ -408,7 +411,8 @@
     </div>
   </div>
 
-  <h4>Step 3: the exponential-map Jacobian (a valid density on the sphere).</h4>
+  <h4>Step 3: the exponential-map Jacobian</h4>
+  <div class="step-goal">Normalizing the density on the sphere</div>
   <p>A Student-$t$ is now defined on $\mathbf u$, but the observed quantity is the direction $\hat{\mathbf z}$ on the sphere. A density transforms under a change of variables by the determinant of the map's Jacobian, and the exponential map (tangent vector $\to$ sphere point) is nonlinear, so its Jacobian is not one and depends on the angle. For the unit sphere,</p>
   <div class="eq">$$\lvert J_{\exp}\rvert=\Big(\frac{\sin\theta}{\theta}\Big)^{D-2},\qquad \log\lvert J_{\exp}\rvert=(D-2)\,\log\frac{\sin\theta}{\theta}.$$</div>
   <p>Equal areas on the flat tangent plane do not map to equal areas on the sphere; the mismatch grows with the angle. Without this factor the directional density would not integrate to one over the sphere, the conditional likelihood would be ill-defined, and the symmetric ELBO would no longer be a valid lower bound.</p>
@@ -433,7 +437,7 @@
     </div>
   </div>
 
-  <h4>Assembling the term.</h4>
+  <h4>Assembling the term</h4>
   <p>The negative logarithm of the tangent-space Student-$t$ supplies the first two terms; the change of variables onto the sphere supplies $\log\lvert J_{\exp}\rvert$. Dropping constants in $\nu$ and $k$ gives the directional negative log-likelihood (paper Eq. 5), with each term traceable to a step above:</p>
   <div class="termmap">
     <div class="lbl">$\ell_{\text{dir}}$, term by term</div>
@@ -441,10 +445,10 @@
   </div>
   <p>The radial term $\ell_{\text{rad}}$ is a one-dimensional Student-$t$ negative log-likelihood on $\Delta r_{ij}$, which maintains magnitude consistency without the norm influencing the directional term.</p>
 
-  <h3>The full objective</h3>
+  <h3>Completing the objective</h3>
   <p>The negative log-likelihood, symmetrized over both directions (paper Eq. 4), is</p>
   <div class="eq">$$\mathcal L_{\text{NLL}}=\tfrac12\!\!\sum_{(i,j)\in\{(1,2),(2,1)\}}\!\!\mathbb E_{\mathbf s_i\sim q_i}\Big[\ell_{\text{dir}}\big(\operatorname{sg}(\hat{\mathbf z}_j),\hat{\mathbf s}_i;\boldsymbol\sigma_i^2\big)+\ell_{\text{rad}}\big(\Delta r_{ij}\big)\Big],$$</div>
-  <p>where $\operatorname{sg}(\cdot)$ is the stop-gradient that fixes the observation the likelihood conditions on. The complete objective adds a KL term toward the standard-normal prior $p(\mathbf s)=\mathcal N(\mathbf 0,\mathbf I)$, which regularizes the posterior and fixes the latent geometry around a common origin and scale:</p>
+  <p>where $\operatorname{sg}(\cdot)$ is the stop-gradient that fixes the observation the likelihood conditions on. The complete objective adds the prior-matching term of the variational bound, the KL toward the standard Gaussian prior $p(\mathbf s)=\mathcal N(\mathbf 0,\mathbf I)$, which anchors each posterior both geometrically, to the origin and a unit scale, and probabilistically, to a proper, well-defined distribution:</p>
   <div class="eq">$$\mathcal L=\mathcal L_{\text{NLL}}+\beta\,\mathcal L_{\text{KL}},\qquad \mathcal L_{\text{KL}}=\tfrac12\!\sum_{i}\operatorname{KL}\!\big(q_i\,\Vert\,p(\mathbf s)\big),$$</div>
   <p>using the closed-form diagonal-Gaussian KL. Minimizing $\mathcal L$ is equivalent to maximizing the paper's $\beta$-weighted symmetric conditional lower-bound objective with the directional factor defined above.</p>
 </section>
@@ -648,7 +652,7 @@ function buildPipelines(){
   return s;
 }
 
-// geodesic log map
+// geodesic log-map
 function buildLog(theta){
   const cx=224,cy=190,R=92;
   const start=deg(42), tgt=start-theta;
