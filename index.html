@@ -261,7 +261,7 @@
   <p>At a high level, non-contrastive methods replace labels with agreement between two views of the same input. In the predictive case this is usually written as a pointwise discrepancy between a prediction from one view and a target representation from the other:</p>
   <div class="eq">$$\mathcal L_{\text{pred}}(x_1,x_2)=d\big(h(f_\theta(x_1)),\,f_\xi(x_2)\big),$$</div>
   <p>where $d$ is a cosine or Euclidean distance, $h$ is a predictor, and $f_\xi$ a detached target encoder. The distance plays the role of an energy, low when the views agree. Such methods are usually called energy-based, but the term is narrower in use than in principle: a normalized density is itself an energy, namely $-\log p$, so what these objectives actually commit to is leaving the energy unnormalized. That choice, of which the Joint Embedding Predictive Architecture (JEPA<sup class="cite"><a href="#ref-5">5</a></sup>) is a prominent restatement, carries two structural consequences regardless of framing. The first is that some device is needed to rule out collapse, the constant map onto a single point, but the choice of device is heuristic, not dictated by the objective: the predictive asymmetry, the redundancy-reduction penalties, or the isotropic-Gaussian matching of LeJEPA<sup class="cite"><a href="#ref-8">8</a></sup> (SIGReg), the last argued to be principled but only relative to the loss and assumptions it adopts. The second is that each input becomes a single point, so the representation cannot express how certain that point is, a quantity that may in fact be the most valuable in label-scarce settings.</p>
-  <p>Probabilistic reformulations of SSL exist, but they usually reinterpret an existing deterministic objective rather than building the training criterion as a representation-space likelihood. VI-SimSiam<sup class="cite"><a href="#ref-9">9</a></sup>, which reads SimSiam as variational inference with a concentration on each prediction, is one such reformulation. Variational Joint Embedding (VJE) changes the objective itself: it replaces the plain distance with a latent-variable objective in representation space, derived from the spherical construction used in the paper. The model assigns a separate uncertainty to each feature, and it treats each embedding as a unit direction together with a scalar magnitude. The fixed-target asymmetry has a probabilistic interpretation in VJE: a likelihood conditions on an observation, that observation is fixed rather than optimized, and the stop-gradient on the target is what enforces it, giving the usual stop-gradient mechanism a modelling role rather than treating it purely as an architectural trick. The devices with no first-principles role, the projection head being the obvious one, are simply absent. Aside from those, the architectural motifs are shared, so the pointwise methods are recovered as limiting cases of VJE's objective.</p>
+  <p>Probabilistic reformulations of SSL exist, but they usually reinterpret an existing deterministic objective rather than building the training criterion as a representation-space likelihood. VI-SimSiam<sup class="cite"><a href="#ref-9">9</a></sup>, which reads SimSiam as variational inference with a concentration on each prediction, is one such reformulation. Variational Joint Embedding (VJE) changes the objective itself: it replaces the plain distance with a latent-variable objective in representation space. It is an anisotropic variational model built from the ground up, scoring each embedding's direction and magnitude under a learned uncertainty. The devices with no first-principles role, the projection head among them, are simply absent. Aside from those, the architectural motifs are shared, so the pointwise methods reappear as limiting cases of the objective.</p>
 </section>
 
 <section>
@@ -270,13 +270,13 @@
   <p>A latent-variable model treats each observation as generated from a hidden code $\mathbf s$ with prior $p(\mathbf s)$ and likelihood $p(\,\cdot\mid\mathbf s)$. The marginal $p(x)=\int p(x\mid\mathbf s)\,p(\mathbf s)\,d\mathbf s$ is intractable, so an approximate posterior $q_\phi(\mathbf s\mid x)$ is introduced and the evidence lower bound (ELBO) is maximized:</p>
   <div class="eq">$$\log p(x)\;\ge\;\mathbb E_{q_\phi(\mathbf s\mid x)}\big[\log p(x\mid\mathbf s)\big]\;-\;\operatorname{KL}\!\big(q_\phi(\mathbf s\mid x)\,\Vert\,p(\mathbf s)\big).$$</div>
   <p>The first term measures how well the latent explains the observation; the second keeps the posterior close to the prior. Two mechanical points support optimization: <strong>reparameterization</strong> lets gradients pass through sampling, $\mathbf s=\boldsymbol\mu+\boldsymbol\sigma\odot\boldsymbol\varepsilon$ with $\boldsymbol\varepsilon\sim\mathcal N(\mathbf 0,\mathbf I)$; and <strong>amortization</strong> uses one network $q_\phi$ to predict the posterior for any input.</p>
-  <p>A variational autoencoder<sup class="cite"><a href="#ref-10">10</a></sup> is one instance of this, with pixels as the observation and a decoder as $p(x\mid\mathbf s)$. VJE keeps the ELBO but changes <em>what is observed</em>: it never reconstructs the input. The observation is the other view's embedding, and three features of that choice drive everything that follows. There is no decoder and no pixel likelihood: the density lives directly in representation space, so the model never pays to generate high-entropy detail. The quantity being explained, the target embedding, must be held fixed, because a conditional likelihood cannot receive gradients through what it conditions on; this is the same detachment BYOL introduced for stability, now required by the probabilistic semantics. And the observation, though a vector in $\mathbb R^D$, is naturally a direction together with a magnitude, which a single Gaussian on the raw vector would conflate. So the one ingredient the ELBO leaves unspecified, the likelihood $p(y\mid\mathbf s)$, is exactly where VJE does its work: a normalized density on the unit sphere for the direction, a separate density for the magnitude, and the posterior's own per-feature variances reused as the likelihood's scale. Constructing that spherical density correctly, so that it stays a valid normalized density and the ELBO a genuine bound, is the substance of what follows.</p>
+  <p>A variational autoencoder<sup class="cite"><a href="#ref-10">10</a></sup> is one instance of this, with pixels as the observation and a decoder as $p(x\mid\mathbf s)$. VJE keeps the ELBO but changes <em>what is observed</em>: it never reconstructs the input. The observation is the other view's embedding, and three features of that choice drive everything that follows. There is no decoder and no pixel likelihood: the density lives directly in representation space, so the model never pays to generate high-entropy detail. The quantity being explained, the target embedding, must be held fixed, because a conditional likelihood cannot receive gradients through what it conditions on; this is the same detachment SimSiam and BYOL introduced for stability, now required by the probabilistic semantics. And the observation, though a vector in $\mathbb R^D$, is naturally a direction together with a magnitude, which a single Gaussian on the raw vector would conflate. So the one ingredient the ELBO leaves unspecified, the likelihood $p(y\mid\mathbf s)$, is exactly where VJE does its work: a normalized density on the unit sphere for the direction, a separate density for the magnitude, and the posterior's own per-feature variances reused as the likelihood's scale. Constructing that spherical density correctly, so that it stays a valid normalized density and the ELBO a genuine bound, is the substance of what follows.</p>
 </section>
 
 <section>
   <span class="secnum">Section 3</span>
   <h2>The VJE formulation</h2>
-  <p>VJE does not reconstruct $x$. The observation is the other view's embedding. For the conditional direction from view $i$ to view $j$:</p>
+  <p>For the conditional direction from view $i$ to view $j$:</p>
   <ul>
     <li>The inference network maps the context embedding to a posterior over the latent, $q_i(\mathbf s)=\mathcal N(\boldsymbol\mu_i,\operatorname{diag}(\boldsymbol\sigma_i^2))$, with $(\boldsymbol\mu_i,\boldsymbol\sigma_i^2)=g_\phi(\mathbf z_i)$.</li>
     <li>A latent sample $\mathbf s_i$ is drawn and scored against the target observation $y_j=(\hat{\mathbf z}_j,\lVert\mathbf z_j\rVert)$ under a conditional likelihood.</li>
@@ -308,7 +308,7 @@
   <p>The likelihood $p(y_j\mid\mathbf s)$ follows from one observation about embeddings and three design choices.</p>
   <h3 class="choice">Decoupling direction and magnitude</h3>
   <p>In supervised learning, labels specify which aspects of representation geometry the optimizer should organize: class separation, margins, regression structure, or whatever the task requires. In non-contrastive SSL, that signal is absent. The objective only says that two views of the same input should agree, but it does not by itself specify whether agreement should be carried by angular structure, embedding norm, or some mixture of the two. This is one reason regularization-based SSL methods add explicit geometric constraints: they use a generic matching objective, then constrain the representation through variance, covariance, or redundancy-reduction terms so that the optimizer cannot satisfy view agreement through degenerate geometry.</p>
-  <p>VJE addresses the same under-specification inside the likelihood itself. Rather than matching raw embeddings and then imposing separate geometric penalties, it starts from the fact that a vector $\mathbf z\in\mathbb R^D$ carries a direction and a magnitude. A single Gaussian on $\mathbf z$ entangles the two and is sensitive to changes in the embedding norm, so VJE separates the observation into directional and radial components: angular agreement is scored on the unit sphere, magnitude consistency is scored by a separate radial term, and directional uncertainty lives in the tangent geometry. The directional/radial likelihood is therefore not merely a modelling choice; it is a way of making the unsupervised predictive objective geometrically better posed.</p>
+  <p>VJE addresses the same under-specification inside the likelihood itself. Rather than matching raw embeddings and then imposing separate geometric penalties, it starts from the fact that a vector $\mathbf z\in\mathbb R^D$ carries a direction and a magnitude. A single density over $\mathbf z$ entangles the two and is sensitive to changes in the embedding norm, so VJE separates the observation into directional and radial components: angular agreement is scored on the unit sphere, magnitude consistency is scored by a separate radial term, and directional uncertainty lives in the tangent geometry. The directional/radial likelihood is therefore not merely a modelling choice; it is a way of making the unsupervised predictive objective geometrically better posed.</p>
   <p>Formally, the observation is written as $y=(\hat{\mathbf z},\lVert\mathbf z\rVert)$. The directional component is modelled on the unit sphere $\mathbb S^{D-1}$, while the radial component is modelled by a one-dimensional term on the norm mismatch. The latent is decomposed the same way, giving the radial residual $\Delta r_{ij}=\lVert\mathbf z_j\rVert-\lVert\mathbf s_i\rVert$.</p>
   <div class="figblock">
     <div class="plate">
@@ -335,7 +335,7 @@
   </div>
 
   <h3 class="choice">Bounding gradients</h3>
-  <p>Both factors are Student-$t$ distributions sharing a degrees-of-freedom parameter $\nu&gt;0$. Heavy tails make the objective robust to hard or noisy pairs: large angular errors do not dominate training as they would under a Gaussian. As $\nu\to\infty$ the Student-$t$ approaches a Gaussian, so this is a strict generalization with one tunable parameter.</p>
+  <p>Robustness too traces to the absent label signal: nothing flags which pairs are unreliable, so a mismatched or ambiguous one can carry an anomalously large residual, and a light-tailed likelihood turns that into a correspondingly large gradient that skews the update. To combat this, the likelihood itself should be made to absorb such anomalies, and a heavy-tailed Student-$t$ is a natural choice, used for both the directional and radial factors with a shared degrees-of-freedom parameter $\nu&gt;0$. Their heavy tails bound that gradient at the source: past a point, a larger residual carries less weight, not more, so anomalous pairs are discounted automatically, without clipping, filtering, or any other outlier heuristic. A single parameter $\nu$ controls the strength of this down-weighting, with the Gaussian recovered as $\nu\to\infty$, so this is a strict generalization.</p>
   <div class="figblock">
     <div class="plate">
       <div class="plate-head">
@@ -388,10 +388,10 @@
   </div>
 
   <h4>Step 2: the tangent-space scale</h4>
-  <div class="step-goal">Conditioning on the radial coordinate</div>
-  <p>A Student-$t$ also needs a scale matrix, and it must live in the tangent space. The model supplies $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ in the full $D$-dimensional embedding space, but the tangent space is the $(D-1)$-dimensional hyperplane orthogonal to $\hat{\mathbf s}$. The remaining direction, along $\hat{\mathbf s}$, is the radial (magnitude) direction, which is handled by the radial term rather than the directional scale. Writing $\Sigma$ in a radial ($r$) / tangent ($t$) frame with blocks $\Sigma_{tt}$, $\Sigma_{rr}$, and cross-block $\Sigma_{tr}$, the tangent covariance after conditioning on the radial coordinate is the Schur complement<sup class="cite"><a href="#ref-14">14</a></sup></p>
-  <div class="eq">$$\Sigma_{\text{tan}}=\Sigma_{tt}-\Sigma_{tr}\,\Sigma_{rr}^{-1}\,\Sigma_{tr}^{\top}.$$</div>
-  <p>The radial direction is one-dimensional, so $\Sigma_{rr}$ is a scalar and the Schur complement subtracts a rank-one correction from $\Sigma_{tt}$. Simply deleting the radial row and column is not enough because $\hat{\mathbf s}$ is generally not axis-aligned: in the radial-tangent frame, the diagonal $\Sigma$ can have cross terms $\Sigma_{tr}$. The covariance-weighted angular error is then $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u$, anisotropic because $\Sigma_{\text{tan}}$ is built from the per-feature variances.</p>
+  <div class="step-goal">Projecting out the radial coordinate</div>
+  <p>A Student-$t$ also needs a scale matrix, and it must live in the tangent space. The model supplies $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ in the full $D$-dimensional embedding space, but the tangent space is the $(D-1)$-dimensional hyperplane orthogonal to $\hat{\mathbf s}$. The remaining direction, along $\hat{\mathbf s}$, is the radial (magnitude) direction, which is handled by the radial term rather than the directional scale. Writing $\Sigma$ in a radial ($r$) / tangent ($t$) frame with blocks $\Sigma_{tt}$, $\Sigma_{rr}$, and cross-block $\Sigma_{tr}$, the directional scale marginalizes out the radial coordinate, keeping the tangent block</p>
+  <div class="eq">$$\Sigma_{\text{tan}}=\Sigma_{tt}.$$</div>
+  <p>Marginalizing a Gaussian keeps the tangent block of the covariance, so $\Sigma_{\text{tan}}=\Sigma_{tt}$, deleting the radial row and column. The subtlety is in the quadratic form: $(\Sigma_{tt})^{-1}$ is not the tangent block of $\Sigma^{-1}$, because $\hat{\mathbf s}$ is generally not axis-aligned, so the whitened vector $\Sigma^{-1}\mathbf u$ acquires a component along $\hat{\mathbf s}$. Removing it gives the angular error $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u=\mathbf u^\top\Sigma^{-1}\mathbf u-\dfrac{(\mathbf u^\top\Sigma^{-1}\hat{\mathbf s})^2}{\hat{\mathbf s}^\top\Sigma^{-1}\hat{\mathbf s}}$, the Schur complement of the precision<sup class="cite"><a href="#ref-14">14</a></sup>, anisotropic because $\Sigma$ holds the per-feature variances.</p>
 
   <div class="figblock">
     <div class="plate">
@@ -400,7 +400,7 @@
         <span class="step-name">Schur complement</span>
         <span class="produces">produces the scale&nbsp;$\Sigma_{\mathrm{tan}}$</span>
       </div>
-      <svg id="svg-schur" class="fig" viewBox="0 0 520 420" role="img" aria-label="Schur complement: conditional vs marginal tangent width"></svg>
+      <svg id="svg-schur" class="fig" viewBox="0 0 520 420" role="img" aria-label="Schur complement in whitened space: the whitened residual projected off the whitened normal"></svg>
       <div class="controls">
         <button class="pp" id="pp-schur">Pause</button>
         <label class="ctl"><span>radial-tangent coupling&nbsp;$\rho$</span><input id="sl-schur" type="range" min="0" max="0.9" step="0.01" value="0.62" disabled><span class="val" id="rd-schur">ρ = 0.62</span></label>
@@ -408,8 +408,8 @@
     </div>
     <div class="caption">
       <div class="cap-label">Schur complement</div>
-      <p><strong>Shown.</strong> How the directional scale $\Sigma_{\text{tan}}$ is obtained from the embedding covariance. The plot is a 2D slice: the horizontal axis $t$ stands for the tangent (directional) space, the vertical axis $r$ for the single radial direction, and the ellipse is their joint covariance, with tilt controlled by the coupling $\rho$ (slider). Two tangent spreads are marked. <em>Marginal</em> (dashed verticals and the bracket below) is the full horizontal extent: the spread of $t$ when $r$ is ignored, equal to $\sigma_t$. <em>Conditional</em> (the blue chord on the axis) is the horizontal width of the slice at $r=0$: the spread of $t$ once $r$ is fixed, equal to $\sigma_t\sqrt{1-\rho^2}$. Conditioning corresponds to slicing the ellipse at $r=0$; marginalizing corresponds to projecting it onto the $t$ axis. When the ellipse is tilted, the slice is narrower than the projection.</p>
-      <p><strong>Where it enters $\ell_{\text{dir}}$.</strong> $\Sigma_{\text{tan}}$, the conditional spread, is the scale of the <em>directional</em> likelihood: it weights the angular error in $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u$ and sets the normalizer $\tfrac12\log\lvert\Sigma_{\text{tan}}\rvert$<sup class="cite"><a href="#ref-14">14</a></sup>. Built from the per-feature variances, it is anisotropic across the tangent space. Conditioning on the radial coordinate keeps this scale purely directional: spread along $\hat{\mathbf s}$ is magnitude uncertainty, already scored by $\ell_{\text{rad}}$, so the marginal width would double-count it. At $\rho=0$ the ellipse is upright, slice and projection coincide, and $\Sigma_{\text{tan}}=\Sigma_{tt}$.</p>
+      <p><strong>Shown.</strong> The tangent restriction in whitened coordinates $w=\Sigma^{-1/2}x$, where the covariance becomes the unit circle. The residual $\mathbf u$ maps to $w_u=\Sigma^{-1/2}\mathbf u$ (the radius drawn to the circle) and the sphere normal $\hat{\mathbf s}$ to $w_s=\Sigma^{-1/2}\hat{\mathbf s}$ (the horizontal axis). Whitening is a shear, so $\mathbf u\perp\hat{\mathbf s}$ in the embedding does not survive as $w_u\perp w_s$ here: $w_u$ tilts toward $w_s$, and the coupling $\rho$ (slider) is the cosine of that angle. The Schur complement resolves $w_u$ into a radial part (along $w_s$) and a tangent part (perpendicular to $w_s$); the directional scale is the tangent part, $\sqrt{Q_{\text{dir}}}=\lVert w_u^{\perp w_s}\rVert$ (teal).</p>
+      <p><strong>Where it enters $\ell_{\text{dir}}$.</strong> The kept leg is the angular error, $Q_{\text{dir}}=\mathbf u^\top\Sigma^{-1}\mathbf u-(\mathbf u^\top\Sigma^{-1}\hat{\mathbf s})^2/(\hat{\mathbf s}^\top\Sigma^{-1}\hat{\mathbf s})$, a right-triangle identity<sup class="cite"><a href="#ref-14">14</a></sup>: squared hypotenuse $\mathbf u^\top\Sigma^{-1}\mathbf u$ minus the squared $w_s$-leg $b^2/c$. The same restricted scale sets the normalizer $\tfrac12\log\lvert\Sigma_{\text{tan}}\rvert$, with $\Sigma_{\text{tan}}=\Sigma_{tt}$. At $\rho=0$ the radial and tangent axes are uncoupled, $w_u\perp w_s$, the correction vanishes, and the error is the plain $\lVert w_u\rVert^2$; larger $\rho$ removes more radial leakage.</p>
     </div>
   </div>
 
@@ -692,41 +692,42 @@ function buildLog(theta){
 
 // Schur complement
 function buildSchur(rho){
-  // tangent = horizontal (t, x); radial = vertical (r, y)
-  const cx=262, cy=186, st=104, sr=72;
-  const cov=[[st*st,rho*st*sr],[rho*st*sr,sr*sr]];
-  const e=eig2(cov);
-  const ang=Math.atan2(e.vy,e.vx)*180/Math.PI;
-  const major=Math.sqrt(e.l1), minor=Math.sqrt(e.l2);
-  const wr=Math.sqrt(Math.max(0,1-rho*rho));
-  const cw=st*Math.max(0.02,wr);            // conditional half-width = st*sqrt(1-rho^2)
-  const vr=1-rho*rho;
-  const gTop=cy-sr-14, gBot=cy+sr+14;       // dashed marginal guide lines
-  const brY=cy+sr+34;                       // marginal bracket
-  const vt=(x)=>`<line x1="${x}" y1="${gTop}" x2="${x}" y2="${gBot}" stroke="#A5755E" stroke-width="1.3" stroke-dasharray="5 6"/>`;
+  // whitened space: covariance -> unit circle; the Schur complement drops the w_s-component of the whitened residual
+  const sub=t=>`<tspan baseline-shift="sub" font-size="0.72em">${t}</tspan>`;
+  const sup=t=>`<tspan baseline-shift="super" font-size="0.72em">${t}</tspan>`;
+  const cx=206, cy=212, R=132;
+  const r=Math.max(0,Math.min(0.9,rho));
+  const phi=Math.acos(r);
+  const Px=cx+R*Math.cos(phi), Py=cy-R*Math.sin(phi), Fx=Px, Fy=cy;
+  const wr=Math.sqrt(Math.max(0,1-r*r));
+  const TEAL='#536F72', MUT='#9C725D', INK='#24231F', AX='#AAA397', GR='#746F66';
+  const arcR=40, q=12;
+  const arcMarkup=`<path d="${arcPath(cx,cy,arcR,0,phi)}" fill="none" stroke="${GR}" stroke-width="1.3"/>`;
+  const raSq=`<path d="M ${(Fx-q).toFixed(1)} ${Fy} L ${(Fx-q).toFixed(1)} ${Fy-q} L ${Fx.toFixed(1)} ${Fy-q}" fill="none" stroke="${GR}" stroke-width="1.3"/>`;
   return frame()+`<g>
-    <text x="26" y="30" fill="#746F66" font-size="13" ${FT}>covariance: tangent t, radial r &#183; tilt = ρ</text>
-    <line x1="96" y1="${cy}" x2="438" y2="${cy}" stroke="#AAA397" stroke-width="1.6" marker-end="url(#arrow-muted)"/>
-    <line x1="${cx}" y1="304" x2="${cx}" y2="60" stroke="#AAA397" stroke-width="1.6" marker-end="url(#arrow-muted)"/>
-    <text x="444" y="${cy-8}" fill="#746F66" font-size="13" ${FT}>t</text>
-    <text x="${cx+9}" y="70" fill="#746F66" font-size="13" ${FT}>r</text>
-    <ellipse cx="${cx}" cy="${cy}" rx="${major.toFixed(1)}" ry="${minor.toFixed(1)}" transform="rotate(${(-ang).toFixed(2)} ${cx} ${cy})" fill="#24231F" fill-opacity="0.08" stroke="#46433D" stroke-width="2"/>
-    ${vt(cx-st)} ${vt(cx+st)}
-    <line x1="${cx-st}" y1="${brY}" x2="${cx+st}" y2="${brY}" stroke="#9C725D" stroke-width="1.7"/>
-    <line x1="${cx-st}" y1="${brY-6}" x2="${cx-st}" y2="${brY+6}" stroke="#9C725D" stroke-width="1.7"/>
-    <line x1="${cx+st}" y1="${brY-6}" x2="${cx+st}" y2="${brY+6}" stroke="#9C725D" stroke-width="1.7"/>
-    <line x1="${(cx-cw).toFixed(1)}" y1="${cy}" x2="${(cx+cw).toFixed(1)}" y2="${cy}" stroke="#536F72" stroke-width="4.2"/>
-    <circle cx="${(cx-cw).toFixed(1)}" cy="${cy}" r="4" fill="#536F72"/><circle cx="${(cx+cw).toFixed(1)}" cy="${cy}" r="4" fill="#536F72"/>
-    <circle cx="${cx}" cy="${cy}" r="3" fill="#FFFFFF" stroke="#46433D" stroke-width="1.3"/>
-    <g transform="translate(64 338)">
-      <line x1="0" y1="0" x2="26" y2="0" stroke="#536F72" stroke-width="4.2"/>
-      <text x="34" y="4.5" fill="#536F72" font-size="12.5" ${FT}>Σₜₐₙ: conditional (slice r = 0)</text>
+    <text x="26" y="30" fill="${GR}" font-size="13" ${FT}>whitened space (\u00d7 \u03a3${sup('\u22121/2')}): covariance \u2192 unit circle</text>
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="${INK}" fill-opacity="0.05" stroke="#46433D" stroke-width="1.7"/>
+    <line x1="${cx-R-22}" y1="${cy}" x2="${cx+R+40}" y2="${cy}" stroke="${AX}" stroke-width="1.5" marker-end="url(#arrow-muted)"/>
+    <text x="${cx+R+46}" y="${cy+5}" fill="${GR}" font-size="14" font-style="italic" ${FT}>w${sub('s')}</text>
+    <text x="${cx+R+30}" y="${cy+23}" fill="${GR}" font-size="11" ${FT}>whitened normal</text>
+    ${arcMarkup}
+    <text x="${cx+arcR+8}" y="${cy-12}" fill="${GR}" font-size="13" font-style="italic" ${FT}>\u03c6</text>
+    <line x1="${cx}" y1="${cy}" x2="${Fx.toFixed(1)}" y2="${Fy}" stroke="${MUT}" stroke-width="3" stroke-dasharray="6 5"/>
+    <line x1="${Fx.toFixed(1)}" y1="${Fy}" x2="${Px.toFixed(1)}" y2="${Py.toFixed(1)}" stroke="${TEAL}" stroke-width="4.6" stroke-linecap="round"/>
+    ${raSq}
+    <line x1="${cx}" y1="${cy}" x2="${Px.toFixed(1)}" y2="${Py.toFixed(1)}" stroke="${INK}" stroke-width="2.4" marker-end="url(#arrow-white)"/>
+    <circle cx="${cx}" cy="${cy}" r="3.2" fill="#FFFFFF" stroke="#46433D" stroke-width="1.3"/>
+    <text x="${(Px+12).toFixed(1)}" y="${(Py-7).toFixed(1)}" fill="${INK}" font-size="15" font-style="italic" font-weight="700" ${FT}>w${sub('u')}</text>
+    <text x="${(Px+12).toFixed(1)}" y="${((cy+Py)/2+4).toFixed(1)}" fill="${TEAL}" font-size="13.5" font-weight="700" ${FT}>\u221aQ${sub('dir')}</text>
+    <g transform="translate(40 366)">
+      <line x1="0" y1="0" x2="26" y2="0" stroke="${TEAL}" stroke-width="4.6"/>
+      <text x="34" y="4.5" fill="${TEAL}" font-size="12.5" ${FT}>\u221aQ${sub('dir')}: tangent part of w${sub('u')}</text>
     </g>
-    <g transform="translate(64 362)">
-      <line x1="0" y1="0" x2="26" y2="0" stroke="#9C725D" stroke-width="1.7" stroke-dasharray="5 6"/>
-      <text x="34" y="4.5" fill="#9C725D" font-size="12.5" ${FT}>marginal (projection over r)</text>
+    <g transform="translate(250 366)">
+      <line x1="0" y1="0" x2="26" y2="0" stroke="${MUT}" stroke-width="3" stroke-dasharray="6 5"/>
+      <text x="34" y="4.5" fill="${MUT}" font-size="12.5" ${FT}>radial part along w${sub('s')} (b${sup('2')}/c)</text>
     </g>
-    <text x="260" y="398" fill="#24231F" font-size="13" ${FT} text-anchor="middle">conditional = √(1−ρ²) &#215; marginal = ${wr.toFixed(2)} &#183; variance &#215; ${vr.toFixed(2)}</text>
+    <text x="260" y="402" fill="${INK}" font-size="13" ${FT} text-anchor="middle">tangent part = \u221a(1\u2212\u03c1${sup('2')}) = ${wr.toFixed(2)} ; radial part = \u03c1 = ${r.toFixed(2)}</text>
   </g>`;
 }
 
