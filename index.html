@@ -261,7 +261,7 @@
   <p>At a high level, non-contrastive methods replace labels with agreement between two views of the same input. In the predictive case this is usually written as a pointwise discrepancy between a prediction from one view and a target representation from the other:</p>
   <div class="eq">$$\mathcal L_{\text{pred}}(x_1,x_2)=d\big(h(f_\theta(x_1)),\,f_\xi(x_2)\big),$$</div>
   <p>where $d$ is a cosine or Euclidean distance, $h$ is a predictor, and $f_\xi$ a detached target encoder. The distance plays the role of an energy, low when the views agree. Such methods are usually called energy-based, but the term is narrower in use than in principle: a normalized density is itself an energy, namely $-\log p$, so what these objectives actually commit to is leaving the energy unnormalized. That choice, of which the Joint Embedding Predictive Architecture (JEPA<sup class="cite"><a href="#ref-5">5</a></sup>) is a prominent restatement, carries two structural consequences regardless of framing. The first is that some device is needed to rule out collapse, the constant map onto a single point, but the choice of device is heuristic, not dictated by the objective: the predictive asymmetry, the redundancy-reduction penalties, or the isotropic-Gaussian matching of LeJEPA<sup class="cite"><a href="#ref-8">8</a></sup> (SIGReg), the last argued to be principled but only relative to the loss and assumptions it adopts. The second is that each input becomes a single point, so the representation cannot express how certain that point is, a quantity that may in fact be the most valuable in label-scarce settings.</p>
-  <p>Probabilistic reformulations of SSL exist, but they usually reinterpret an existing deterministic objective rather than building the training criterion as a representation-space likelihood. VI-SimSiam<sup class="cite"><a href="#ref-9">9</a></sup>, which reads SimSiam as variational inference with a concentration on each prediction, is one such reformulation. Variational Joint Embedding (VJE) changes the objective itself: it replaces the plain distance with a latent-variable objective in representation space. It is an anisotropic variational model built from the ground up, scoring each embedding's direction and magnitude under a learned uncertainty. The devices with no first-principles role, the projection head among them, are simply absent. Aside from those, the architectural motifs are shared, so the pointwise methods reappear as limiting cases of the objective.</p>
+  <p>Probabilistic reformulations of SSL exist, but they usually reinterpret an existing deterministic objective rather than building the training criterion as a representation-space likelihood. VI-SimSiam<sup class="cite"><a href="#ref-9">9</a></sup>, which reads SimSiam as variational inference with a concentration on each prediction, is one such reformulation. Variational Joint Embedding (VJE), the method this page is about, changes the objective itself: it replaces the plain distance with a latent-variable objective in representation space. It is an anisotropic variational model built from the ground up, scoring each embedding's direction and magnitude under a learned uncertainty. The devices with no first-principles role, the projection head among them, are simply absent. Aside from those, the architectural motifs are shared, so the pointwise methods reappear as limiting cases of the objective.</p>
 </section>
 
 <section>
@@ -270,7 +270,7 @@
   <p>A latent-variable model treats each observation as generated from a hidden code $\mathbf s$ with prior $p(\mathbf s)$ and likelihood $p(\,\cdot\mid\mathbf s)$. The marginal $p(x)=\int p(x\mid\mathbf s)\,p(\mathbf s)\,d\mathbf s$ is intractable, so an approximate posterior $q_\phi(\mathbf s\mid x)$ is introduced and the evidence lower bound (ELBO) is maximized:</p>
   <div class="eq">$$\log p(x)\;\ge\;\mathbb E_{q_\phi(\mathbf s\mid x)}\big[\log p(x\mid\mathbf s)\big]\;-\;\operatorname{KL}\!\big(q_\phi(\mathbf s\mid x)\,\Vert\,p(\mathbf s)\big).$$</div>
   <p>The first term measures how well the latent explains the observation; the second keeps the posterior close to the prior. Two mechanical points support optimization: <strong>reparameterization</strong> lets gradients pass through sampling, $\mathbf s=\boldsymbol\mu+\boldsymbol\sigma\odot\boldsymbol\varepsilon$ with $\boldsymbol\varepsilon\sim\mathcal N(\mathbf 0,\mathbf I)$; and <strong>amortization</strong> uses one network $q_\phi$ to predict the posterior for any input.</p>
-  <p>A variational autoencoder<sup class="cite"><a href="#ref-10">10</a></sup> is one instance of this, with pixels as the observation and a decoder as $p(x\mid\mathbf s)$. VJE keeps the ELBO but changes <em>what is observed</em>: it never reconstructs the input. The observation is the other view's embedding, and three features of that choice drive everything that follows. There is no decoder and no pixel likelihood: the density lives directly in representation space, so the model never pays to generate high-entropy detail. The quantity being explained, the target embedding, must be held fixed, because a conditional likelihood cannot receive gradients through what it conditions on. And the observation, though a vector in $\mathbb R^D$, is naturally a direction together with a magnitude, which a single Gaussian on the raw vector would conflate. So the one ingredient the ELBO leaves unspecified, the likelihood $p(y\mid\mathbf s)$, is exactly where VJE does its work: a normalized density on the unit sphere for the direction, a separate density for the magnitude, and the posterior's own per-feature variances reused as the likelihood's scale. Constructing that spherical density correctly, so that it stays a valid normalized density and the ELBO a genuine bound, is the substance of what follows.</p>
+  <p>A variational autoencoder<sup class="cite"><a href="#ref-10">10</a></sup> is one instance of this, with pixels as the observation and a decoder as $p(x\mid\mathbf s)$. VJE keeps the ELBO but changes <em>what is observed</em>: it never reconstructs the input. The observation is the other view's embedding, and three features of that choice drive everything that follows. There is no decoder and no pixel likelihood: the density lives directly in representation space, so the model never pays to generate high-entropy detail. The quantity being explained, the target embedding, must be held fixed, because a conditional likelihood cannot receive gradients through what it conditions on. And the observation, though a vector in $\mathbb R^D$, is naturally a direction together with a magnitude, which a single density on the raw vector would conflate. So the one ingredient the ELBO leaves unspecified, the likelihood $p(y\mid\mathbf s)$, is exactly where VJE does its work: a normalized density on the unit sphere for the direction, a separate density for the magnitude, and the posterior's own per-feature variances reused as the likelihood's scale. Constructing that spherical density correctly, so that it stays a valid normalized density and the ELBO a genuine bound, is the substance of what follows.</p>
 </section>
 
 <section>
@@ -299,7 +299,7 @@
   </div>
 
   <h3>Recovering the pointwise objective</h3>
-  <p>Under an isotropic Gaussian likelihood with a single fixed variance and a posterior collapsed to a point estimate, $\log p(y_j\mid\mathbf s)$ reduces, up to constants, to the squared error between a predicted and a target embedding, i.e., the pointwise predictive loss (BYOL, SimSiam, JEPA). Non-contrastive prediction is therefore the fixed-variance, point-estimate special case of VJE; the full model generalizes it with a normalized, heavy-tailed likelihood, a learned per-feature variance, and a KL term. There is also no projection head: the posterior and observation model are both defined in the encoder's embedding space, since a separate projection space would have a geometry unrelated to the encoder's.</p>
+  <p>Given the architectural motifs VJE shares with methods such as BYOL, SimSiam, and JEPA, their pointwise objective is recovered as a limiting case: under an isotropic Gaussian likelihood with a single fixed variance and a posterior collapsed to a point estimate, $\log p(y_j\mid\mathbf s)$ reduces, up to constants, to the squared error between a predicted and a target embedding, the pointwise predictive loss those methods minimize. Non-contrastive prediction is therefore the fixed-variance, point-estimate special case of VJE; the full model generalizes it with a normalized, heavy-tailed likelihood, a learned per-feature variance, and a KL term. The projection head, with no first-principles role here, is likewise absent: the posterior and observation model are both defined in the encoder's embedding space, and a separate projection space would have a geometry unrelated to the encoder's.</p>
 </section>
 
 <section>
@@ -335,7 +335,7 @@
   </div>
 
   <h3 class="choice">Bounding gradients</h3>
-  <p>Robustness too traces to the absent label signal: nothing flags which pairs are unreliable, so a mismatched or ambiguous one can carry an anomalously large residual, and a light-tailed likelihood turns that into a correspondingly large gradient that skews the update. To combat this, the likelihood itself should be made to absorb such anomalies, and a heavy-tailed Student-$t$ is a natural choice, used for both the directional and radial factors with a shared degrees-of-freedom parameter $\nu&gt;0$. Their heavy tails bound that gradient at the source: past a point, a larger residual carries less weight, not more, so anomalous pairs are discounted automatically, without clipping, filtering, or any other outlier heuristic. A single parameter $\nu$ controls the strength of this down-weighting, with the Gaussian recovered as $\nu\to\infty$, so this is a strict generalization.</p>
+  <p>Robustness too traces to the absent label signal: nothing flags which pairs are unreliable, so a mismatched or ambiguous one can carry an anomalously large residual, and a light-tailed likelihood turns that into a correspondingly large gradient that skews the update. To combat this, the likelihood itself should be made to absorb such anomalies, and a heavy-tailed Student-$t$ density is a natural choice for both the directional and radial factors, with a shared degrees-of-freedom parameter $\nu&gt;0$. Their heavy tails bound that gradient at the source: past a point, a larger residual carries less weight, not more, so anomalous pairs are discounted automatically, without clipping, filtering, or any other outlier heuristic. A single parameter $\nu$ controls the strength of this down-weighting, with the Gaussian recovered as $\nu\to\infty$, so this is a strict generalization.</p>
   <div class="figblock">
     <div class="plate">
       <div class="plate-head">
@@ -358,7 +358,7 @@
   <p>The inference network $g_\phi$ produces a single variance vector $\boldsymbol\sigma_i^2$ that the model uses in two roles. As the posterior covariance $\operatorname{diag}(\boldsymbol\sigma_i^2)$ it is how unsure the inference is about the latent; as the likelihood scale $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ it is how tightly the target direction must be matched. Sharing the same vector across both is what turns it into uncertainty rather than a free scale: a feature the network is unsure of (large $\sigma^2$) both widens the posterior and loosens the match, so disagreement there is penalized less, while a confident feature tightens both. Were the likelihood given its own separate scale, the two could drift apart and the inferred spread would bear no necessary relation to the penalty actually applied. The scale is per-dimension, so the uncertainty is anisotropic, and it is read directly from $g_\phi$ rather than from any auxiliary output.</p>
 
   <h3>Deriving the directional term</h3>
-  <p>The directional factor is a probability density over a point on the unit sphere, namely the target direction $\hat{\mathbf z}_j$. For the symmetric ELBO to be a genuine lower bound, this factor must be a normalized density on the sphere<sup class="cite"><a href="#ref-11">11</a></sup>: it must integrate to one over $\mathbb S^{D-1}$. Two facts make that nontrivial. First, the standard distributions for continuous data are defined on flat Euclidean space $\mathbb R^k$, not on a curved surface. Second, a unit vector in $\mathbb R^D$ has only $D-1$ independent degrees of freedom because of the constraint $\lVert\hat{\mathbf z}\rVert=1$. The construction therefore moves the comparison into a flat space where a Student-$t$ is well defined<sup class="cite"><a href="#ref-12">12</a></sup>, then transports the resulting density back onto the sphere correctly. The three steps below, each interactive, carry this out.</p>
+  <p>The directional factor is a probability density over a point on the unit sphere, namely the target direction $\hat{\mathbf z}_j$. For the symmetric ELBO to be a genuine lower bound, this factor must be a normalized density on the sphere<sup class="cite"><a href="#ref-11">11</a></sup>: it must integrate to one over $\mathbb S^{D-1}$. Two facts make that nontrivial. First, the standard distributions for continuous data are defined on flat Euclidean space $\mathbb R^k$, not on a curved surface. Second, a unit vector in $\mathbb R^D$ has only $D-1$ independent degrees of freedom because of the constraint $\lVert\hat{\mathbf z}\rVert=1$. The construction therefore moves the comparison into a flat space where a Student-$t$ density is well defined<sup class="cite"><a href="#ref-12">12</a></sup>, then transports the resulting density back onto the sphere correctly. The three steps below, each interactive, carry this out.</p>
   <p>The natural measure of disagreement between two directions is the <em>angle</em> between them, the length of the shortest arc along the sphere (the geodesic distance<sup class="cite"><a href="#ref-13">13</a></sup>), not the straight-line chord. For a predicted direction $\hat{\mathbf s}$ and a target $\hat{\mathbf z}$, this angle is $\theta=\arccos(\hat{\mathbf s}^\top\hat{\mathbf z})\in[0,\pi]$. At $\hat{\mathbf s}$, the <em>tangent space</em> is the flat hyperplane of vectors orthogonal to $\hat{\mathbf s}$, the local linear approximation of the sphere. Its dimension is $k=D-1$.</p>
 
   <h4>Step 1: the geodesic log-map</h4>
@@ -372,7 +372,7 @@
       <div class="plate-head">
         <span class="step">Step 1</span>
         <span class="step-name">Geodesic log-map</span>
-        <span class="produces">produces the residual&nbsp;$\mathbf u$</span>
+        <span class="produces">mapping the geodesic displacement onto the tangent plane</span>
       </div>
       <svg id="svg-log" class="fig" viewBox="0 0 520 420" role="img" aria-label="Geodesic log-map: angle theta unrolled to tangent vector u"></svg>
       <div class="controls">
@@ -388,34 +388,34 @@
   </div>
 
   <h4>Step 2: the tangent-space scale</h4>
-  <div class="step-goal">Projecting out the radial coordinate</div>
-  <p>A Student-$t$ also needs a scale matrix, and it must live in the tangent space. The model supplies $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ in the full $D$-dimensional embedding space, but the tangent space is the $(D-1)$-dimensional hyperplane orthogonal to $\hat{\mathbf s}$. The remaining direction, along $\hat{\mathbf s}$, is the radial (magnitude) direction, which is handled by the radial term rather than the directional scale. Writing $\Sigma$ in a radial ($r$) / tangent ($t$) frame with blocks $\Sigma_{tt}$, $\Sigma_{rr}$, and cross-block $\Sigma_{tr}$, the directional scale marginalizes out the radial coordinate, keeping the tangent block</p>
+  <div class="step-goal">Removing radial leakage after anisotropic whitening</div>
+  <p>The tangent-space Student-$t$ density is parametrized by a scale matrix, which must live in the tangent space. The model supplies $\Sigma=\operatorname{diag}(\boldsymbol\sigma_i^2)$ in the full $D$-dimensional embedding space, but the tangent space is the $(D-1)$-dimensional hyperplane orthogonal to $\hat{\mathbf s}$. The remaining direction, along $\hat{\mathbf s}$, is the radial (magnitude) direction, which is handled by the radial term rather than the directional scale. Writing $\Sigma$ in a radial ($r$) / tangent ($t$) frame with blocks $\Sigma_{tt}$, $\Sigma_{rr}$, and cross-block $\Sigma_{tr}$, the directional scale marginalizes out the radial coordinate, keeping the tangent block</p>
   <div class="eq">$$\Sigma_{\text{tan}}=\Sigma_{tt}.$$</div>
-  <p>Marginalizing a Gaussian keeps the tangent block of the covariance, so $\Sigma_{\text{tan}}=\Sigma_{tt}$, deleting the radial row and column. The subtlety is in the quadratic form: $(\Sigma_{tt})^{-1}$ is not the tangent block of $\Sigma^{-1}$, because $\hat{\mathbf s}$ is generally not axis-aligned, so the whitened vector $\Sigma^{-1}\mathbf u$ acquires a component along $\hat{\mathbf s}$. Removing it gives the angular error $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u=\mathbf u^\top\Sigma^{-1}\mathbf u-\dfrac{(\mathbf u^\top\Sigma^{-1}\hat{\mathbf s})^2}{\hat{\mathbf s}^\top\Sigma^{-1}\hat{\mathbf s}}$, the Schur complement of the precision<sup class="cite"><a href="#ref-14">14</a></sup>, anisotropic because $\Sigma$ holds the per-feature variances.</p>
+  <p>Marginalizing a Gaussian keeps the tangent block of the covariance, so $\Sigma_{\text{tan}}=\Sigma_{tt}$, deleting the radial row and column. The subtlety is in the quadratic form: $(\Sigma_{tt})^{-1}$ is not the tangent block of $\Sigma^{-1}$, because $\hat{\mathbf s}$ is generally not axis-aligned, so the whitened residual $\Sigma^{-1/2}\mathbf u$ is no longer orthogonal to the whitened normal $\Sigma^{-1/2}\hat{\mathbf s}$. Removing that radial component gives the angular error $Q_{\text{dir}}=\mathbf u^\top\Sigma_{\text{tan}}^{-1}\mathbf u=\mathbf u^\top\Sigma^{-1}\mathbf u-\dfrac{(\mathbf u^\top\Sigma^{-1}\hat{\mathbf s})^2}{\hat{\mathbf s}^\top\Sigma^{-1}\hat{\mathbf s}}$, the Schur complement of the precision<sup class="cite"><a href="#ref-14">14</a></sup>, anisotropic because $\Sigma$ holds the per-feature variances.</p>
 
   <div class="figblock">
     <div class="plate">
       <div class="plate-head">
         <span class="step">Step 2</span>
         <span class="step-name">Schur complement</span>
-        <span class="produces">produces the scale&nbsp;$\Sigma_{\mathrm{tan}}$</span>
+        <span class="produces">weighting the angular error by the anisotropic scale</span>
       </div>
-      <svg id="svg-schur" class="fig" viewBox="0 0 520 420" role="img" aria-label="Schur complement in whitened space: the whitened residual projected off the whitened normal"></svg>
+      <svg id="svg-schur" class="fig" viewBox="0 0 520 420" role="img" aria-label="Schur complement in whitened space: the whitened residual resolved into a radial-leakage part along the whitened normal and the retained tangent score orthogonal to it"></svg>
       <div class="controls">
         <button class="pp" id="pp-schur">Pause</button>
-        <label class="ctl"><span>radial-tangent coupling&nbsp;$\rho$</span><input id="sl-schur" type="range" min="0" max="0.9" step="0.01" value="0.62" disabled><span class="val" id="rd-schur">ρ = 0.62</span></label>
+        <label class="ctl"><span>anisotropy</span><input id="sl-schur" type="range" min="0.1" max="0.85" step="0.01" value="0.5" disabled></label>
       </div>
     </div>
     <div class="caption">
       <div class="cap-label">Schur complement</div>
-      <p><strong>Shown.</strong> The tangent restriction in whitened coordinates $w=\Sigma^{-1/2}x$, where the covariance becomes the unit circle. The residual $\mathbf u$ maps to $w_u=\Sigma^{-1/2}\mathbf u$ (the radius drawn to the circle) and the sphere normal $\hat{\mathbf s}$ to $w_s=\Sigma^{-1/2}\hat{\mathbf s}$ (the horizontal axis). Whitening is a shear, so $\mathbf u\perp\hat{\mathbf s}$ in the embedding does not survive as $w_u\perp w_s$ here: $w_u$ tilts toward $w_s$, and the coupling $\rho$ (slider) is the cosine of that angle. The Schur complement resolves $w_u$ into a radial part (along $w_s$) and a tangent part (perpendicular to $w_s$); the directional scale is the tangent part, $\sqrt{Q_{\text{dir}}}=\lVert w_u^{\perp w_s}\rVert$ (teal).</p>
-      <p><strong>Where it enters $\ell_{\text{dir}}$.</strong> The kept leg is the angular error, $Q_{\text{dir}}=\mathbf u^\top\Sigma^{-1}\mathbf u-(\mathbf u^\top\Sigma^{-1}\hat{\mathbf s})^2/(\hat{\mathbf s}^\top\Sigma^{-1}\hat{\mathbf s})$, a right-triangle identity<sup class="cite"><a href="#ref-14">14</a></sup>: squared hypotenuse $\mathbf u^\top\Sigma^{-1}\mathbf u$ minus the squared $w_s$-leg $b^2/c$. The same restricted scale sets the normalizer $\tfrac12\log\lvert\Sigma_{\text{tan}}\rvert$, with $\Sigma_{\text{tan}}=\Sigma_{tt}$. At $\rho=0$ the radial and tangent axes are uncoupled, $w_u\perp w_s$, the correction vanishes, and the error is the plain $\lVert w_u\rVert^2$; larger $\rho$ removes more radial leakage.</p>
+      <p><strong>Shown.</strong> The whitened coordinates $w=\Sigma^{-1/2}x$, where the covariance becomes the unit circle. The residual maps to $w_u=\Sigma^{-1/2}\mathbf u$ (the radius to the circle) and the sphere normal to $w_s=\Sigma^{-1/2}\hat{\mathbf s}$ (the horizontal axis). Whitening is an anisotropic scaling, so $\mathbf u\perp\hat{\mathbf s}$ in the embedding does not survive as $w_u\perp w_s$ here: the stronger the anisotropy (slider), the more $w_u$ tilts toward $w_s$. The Schur complement resolves $w_u$ into a part along $w_s$ (radial leakage) and a part orthogonal to it (the retained directional score), $\sqrt{Q_{\text{dir}}}=\lVert w_u^{\perp w_s}\rVert$.</p>
+      <p><strong>Where it enters $\ell_{\text{dir}}$.</strong> The retained leg is the angular error $Q_{\text{dir}}=\mathbf u^\top\Sigma^{-1}\mathbf u-(\mathbf u^\top\Sigma^{-1}\hat{\mathbf s})^2/(\hat{\mathbf s}^\top\Sigma^{-1}\hat{\mathbf s})$, a right-triangle identity<sup class="cite"><a href="#ref-14">14</a></sup>: squared hypotenuse $a=\mathbf u^\top\Sigma^{-1}\mathbf u$ minus the squared $w_s$-leg $b^2/c$. Retaining only the part orthogonal to $w_s$ holds the directional score on the tangent subspace, off the radial direction $\hat{\mathbf s}$ in the whitened metric; the direction/magnitude split itself is the polar decomposition, not this step. The same restricted block sets the normalizer $\tfrac12\log\lvert\Sigma_{\text{tan}}\rvert$, with $\Sigma_{\text{tan}}=\Sigma_{tt}$. With no anisotropy $w_u\perp w_s$, the correction vanishes, and $Q_{\text{dir}}=\lVert w_u\rVert^2$; stronger anisotropy removes more radial leakage.</p>
     </div>
   </div>
 
   <h4>Step 3: the exponential-map Jacobian</h4>
   <div class="step-goal">Normalizing the density on the sphere</div>
-  <p>A Student-$t$ is now defined on $\mathbf u$, but the observed quantity is the direction $\hat{\mathbf z}$ on the sphere. A density transforms under a change of variables by the determinant of the map's Jacobian, and the exponential map (tangent vector $\to$ sphere point) is nonlinear, so its Jacobian is not one and depends on the angle. For the unit sphere,</p>
+  <p>A Student-$t$ density is now defined on $\mathbf u$, but the observed quantity is the direction $\hat{\mathbf z}$ on the sphere. A density transforms under a change of variables by the determinant of the map's Jacobian, and the exponential map (tangent vector $\to$ sphere point) is nonlinear, so its Jacobian is not one and depends on the angle. For the unit sphere,</p>
   <div class="eq">$$\lvert J_{\exp}\rvert=\Big(\frac{\sin\theta}{\theta}\Big)^{D-2},\qquad \log\lvert J_{\exp}\rvert=(D-2)\,\log\frac{\sin\theta}{\theta}.$$</div>
   <p>Equal areas on the flat tangent plane do not map to equal areas on the sphere; the mismatch grows with the angle. Without this factor the directional density would not integrate to one over the sphere, the conditional likelihood would be ill-defined, and the symmetric ELBO would no longer be a valid lower bound.</p>
 
@@ -424,7 +424,7 @@
       <div class="plate-head">
         <span class="step">Step 3</span>
         <span class="step-name">Exponential-map Jacobian</span>
-        <span class="produces">produces&nbsp;$\log\lvert J_{\exp}\rvert$</span>
+        <span class="produces">applying the change of variables onto the sphere</span>
       </div>
       <svg id="svg-jac" class="fig" viewBox="0 0 520 420" role="img" aria-label="Exponential map area distortion"></svg>
       <div class="controls">
@@ -435,12 +435,12 @@
     <div class="caption">
       <div class="cap-label">Exponential-map Jacobian</div>
       <p><strong>Shown</strong> (for $D=3$, so the sphere is the ordinary $\mathbb S^2$). The flat disc has radius $\theta$. Its image on the sphere is a cap whose <em>geodesic</em> radius, the white arc from the pole to the rim, is still $\theta$: distance along the surface is preserved. But that rim sits at <em>Euclidean</em> radius $\sin\theta$ from the axis (blue), so its circumference contracts from $2\pi\theta$ to $2\pi\sin\theta$. The radial direction keeps its length while the circumferential direction shrinks by $\sin\theta/\theta$, so each area element shrinks by that same factor, which is why $\lvert J_{\exp}\rvert=\sin\theta/\theta$ here.</p>
-      <p><strong>Where it enters $\ell_{\text{dir}}$.</strong> $\log\lvert J_{\exp}\rvert$ is the third term, the change of variables that turns the flat Student-$t$ on $\mathbf u$ into a normalized density on the sphere. Since $\sin\theta/\theta&lt;1$ the term is negative (it lowers the NLL) and grows with $\theta$. For general $D$ the picture is identical; only the exponent changes, $\lvert J_{\exp}\rvert=(\sin\theta/\theta)^{D-2}$.</p>
+      <p><strong>Where it enters $\ell_{\text{dir}}$.</strong> $\log\lvert J_{\exp}\rvert$ is the third term, the change of variables that turns the flat Student-$t$ density on $\mathbf u$ into a normalized density on the sphere. Since $\sin\theta/\theta&lt;1$ the term is negative (it lowers the NLL) and grows with $\theta$. For general $D$ the picture is identical; only the exponent changes, $\lvert J_{\exp}\rvert=(\sin\theta/\theta)^{D-2}$.</p>
     </div>
   </div>
 
   <h4>Assembling the term</h4>
-  <p>The negative logarithm of the tangent-space Student-$t$ supplies the first two terms; the change of variables onto the sphere supplies $\log\lvert J_{\exp}\rvert$. Dropping constants in $\nu$ and $k$ gives the directional negative log-likelihood (paper Eq. 5), with each term traceable to a step above:</p>
+  <p>The negative logarithm of the tangent-space Student-$t$ density supplies the first two terms; the change of variables onto the sphere supplies $\log\lvert J_{\exp}\rvert$. Dropping constants in $\nu$ and $k$ gives the directional negative log-likelihood (paper Eq. 5), with each term traceable to a step above:</p>
   <div class="termmap">
     <div class="lbl">$\ell_{\text{dir}}$, term by term</div>
     <div class="eq">$$\ell_{\text{dir}}=\underbrace{\tfrac{\nu+k}{2}\,\log\!\Big(1+\tfrac{Q_{\text{dir}}}{\nu}\Big)}_{\text{angular error $\cdot$ Steps 1 and 2}}\;+\;\underbrace{\tfrac12\log\lvert\Sigma_{\text{tan}}\rvert}_{\text{scale $\cdot$ Step 2}}\;+\;\underbrace{\log\lvert J_{\exp}\rvert}_{\text{curvature $\cdot$ Step 3}},\qquad k=D-1.$$</div>
@@ -678,49 +678,42 @@ function buildLog(theta){
     <text x="${vEnd.x+14}" y="${vEnd.y+6}" fill="#536F72" font-size="18" font-weight="700" ${FT}>u</text>
   </g>
   <g transform="translate(96 338)">
-    ${leg(0,0,'#24231F','geodesic arc, |arc| = θ')}
+    ${leg(0,0,'#24231F','geodesic arc, length θ')}
     ${leg(210,0,'#746F66','tangent line')}
   </g>`;
 }
 
 // Schur complement
-function buildSchur(rho){
+function buildSchur(aniso){
   // whitened space: covariance -> unit circle; the Schur complement drops the w_s-component of the whitened residual
   const sub=t=>`<tspan baseline-shift="sub" font-size="0.72em">${t}</tspan>`;
   const sup=t=>`<tspan baseline-shift="super" font-size="0.72em">${t}</tspan>`;
   const cx=206, cy=212, R=132;
-  const r=Math.max(0,Math.min(0.9,rho));
+  const r=Math.max(0,Math.min(0.9,aniso));        // anisotropy -> size of the w_s-component
   const phi=Math.acos(r);
   const Px=cx+R*Math.cos(phi), Py=cy-R*Math.sin(phi), Fx=Px, Fy=cy;
-  const wr=Math.sqrt(Math.max(0,1-r*r));
   const TEAL='#536F72', MUT='#9C725D', INK='#24231F', AX='#AAA397', GR='#746F66';
-  const arcR=40, q=12;
-  const arcMarkup=`<path d="${arcPath(cx,cy,arcR,0,phi)}" fill="none" stroke="${GR}" stroke-width="1.3"/>`;
-  const raSq=`<path d="M ${(Fx-q).toFixed(1)} ${Fy} L ${(Fx-q).toFixed(1)} ${Fy-q} L ${Fx.toFixed(1)} ${Fy-q}" fill="none" stroke="${GR}" stroke-width="1.3"/>`;
   return frame()+`<g>
-    <text x="26" y="30" fill="${GR}" font-size="13" ${FT}>whitened space (\u00d7 \u03a3${sup('\u22121/2')}): covariance \u2192 unit circle</text>
+    <text x="26" y="30" fill="${GR}" font-size="13" ${FT}>whitened space: \u03a3${sup('\u22121/2')} maps the covariance to the unit circle</text>
     <circle cx="${cx}" cy="${cy}" r="${R}" fill="${INK}" fill-opacity="0.05" stroke="#46433D" stroke-width="1.7"/>
     <line x1="${cx-R-22}" y1="${cy}" x2="${cx+R+40}" y2="${cy}" stroke="${AX}" stroke-width="1.5" marker-end="url(#arrow-muted)"/>
     <text x="${cx+R+46}" y="${cy+5}" fill="${GR}" font-size="14" font-style="italic" ${FT}>w${sub('s')}</text>
     <text x="${cx+R+30}" y="${cy+23}" fill="${GR}" font-size="11" ${FT}>whitened normal</text>
-    ${arcMarkup}
-    <text x="${cx+arcR+8}" y="${cy-12}" fill="${GR}" font-size="13" font-style="italic" ${FT}>\u03c6</text>
     <line x1="${cx}" y1="${cy}" x2="${Fx.toFixed(1)}" y2="${Fy}" stroke="${MUT}" stroke-width="3" stroke-dasharray="6 5"/>
     <line x1="${Fx.toFixed(1)}" y1="${Fy}" x2="${Px.toFixed(1)}" y2="${Py.toFixed(1)}" stroke="${TEAL}" stroke-width="4.6" stroke-linecap="round"/>
-    ${raSq}
     <line x1="${cx}" y1="${cy}" x2="${Px.toFixed(1)}" y2="${Py.toFixed(1)}" stroke="${INK}" stroke-width="2.4" marker-end="url(#arrow-white)"/>
     <circle cx="${cx}" cy="${cy}" r="3.2" fill="#FFFFFF" stroke="#46433D" stroke-width="1.3"/>
     <text x="${(Px+12).toFixed(1)}" y="${(Py-7).toFixed(1)}" fill="${INK}" font-size="15" font-style="italic" font-weight="700" ${FT}>w${sub('u')}</text>
     <text x="${(Px+12).toFixed(1)}" y="${((cy+Py)/2+4).toFixed(1)}" fill="${TEAL}" font-size="13.5" font-weight="700" ${FT}>\u221aQ${sub('dir')}</text>
+    <text x="${((cx+Fx)/2).toFixed(1)}" y="${cy+22}" fill="${MUT}" font-size="12" ${FT} text-anchor="middle">radial leakage</text>
     <g transform="translate(40 366)">
       <line x1="0" y1="0" x2="26" y2="0" stroke="${TEAL}" stroke-width="4.6"/>
-      <text x="34" y="4.5" fill="${TEAL}" font-size="12.5" ${FT}>\u221aQ${sub('dir')}: tangent part of w${sub('u')}</text>
+      <text x="34" y="4.5" fill="${TEAL}" font-size="12.5" ${FT}>\u221aQ${sub('dir')} : retained directional score</text>
     </g>
-    <g transform="translate(250 366)">
+    <g transform="translate(280 366)">
       <line x1="0" y1="0" x2="26" y2="0" stroke="${MUT}" stroke-width="3" stroke-dasharray="6 5"/>
-      <text x="34" y="4.5" fill="${MUT}" font-size="12.5" ${FT}>radial part along w${sub('s')} (b${sup('2')}/c)</text>
+      <text x="34" y="4.5" fill="${MUT}" font-size="12.5" ${FT}>dropped by the Schur step</text>
     </g>
-    <text x="260" y="402" fill="${INK}" font-size="13" ${FT} text-anchor="middle">tangent part = \u221a(1\u2212\u03c1${sup('2')}) = ${wr.toFixed(2)} ; radial part = \u03c1 = ${r.toFixed(2)}</text>
   </g>`;
 }
 
@@ -880,7 +873,7 @@ function buildTdf(nu){
 // state + animation
 const S={
   log:{playing:true,phase:0.32,theta:1.05},
-  schur:{playing:true,phase:0.10,rho:0.62},
+  schur:{playing:true,phase:0.25,aniso:0.5},
   jac:{playing:true,phase:0.46,theta:1.05},
   couple:{playing:true,phase:0.26,theta:0.95,rz:2.20},
   tdf:{playing:true,phase:0.18,nu:28},
@@ -892,7 +885,7 @@ const svgCouple=document.getElementById('svg-couple');
 const svgTdf=document.getElementById('svg-tdf');
 
 const animLog=ph=>0.35+1.85*smoothPulse(ph);
-const animSchur=ph=>0.15+0.72*smoothPulse(ph);
+const animSchur=ph=>0.15+0.7*smoothPulse(ph);
 const animJac=ph=>0.35+1.85*smoothPulse(ph);
 const animCoupleTheta=ph=>0.32+1.18*smoothPulse(ph);
 const animCoupleRz=ph=>0.75+1.75*smoothPulse((ph+0.33)%1);
@@ -900,7 +893,7 @@ const animTdf=ph=>2+26*smoothPulse(ph);
 // figure registry
 const figs={
   log:  {st:S.log,  svg:svgLog,  build:buildLog,  anim:animLog,  f:'theta', sl:'sl-log',       rd:'rd-log',       fmt:v=>v.toFixed(2)+' rad',  vis:false, dirty:true},
-  schur:{st:S.schur,svg:svgSchur,build:buildSchur,anim:animSchur,f:'rho',   sl:'sl-schur',     rd:'rd-schur',     fmt:v=>'ρ = '+v.toFixed(2),  vis:false, dirty:true},
+  schur:{st:S.schur,svg:svgSchur,build:buildSchur,anim:animSchur,f:'aniso', sl:'sl-schur',     vis:false, dirty:true},
   jac:  {st:S.jac,  svg:svgJac,  build:buildJac,  anim:animJac,  f:'theta', sl:'sl-jac-theta', rd:'rd-jac-theta', fmt:v=>v.toFixed(2)+' rad',  vis:false, dirty:true},
   couple:{st:S.couple,svg:svgCouple,build:buildCouple,multi:true,vis:false,dirty:true},
   tdf:  {st:S.tdf,  svg:svgTdf,  build:buildTdf,  anim:animTdf,  f:'nu',    sl:'sl-tdf',       rd:'rd-tdf',       fmt:v=>'ν = '+Math.round(v), vis:false, dirty:true},
@@ -954,7 +947,7 @@ function wirePP(btnId,key,sliderId,field,animFn){
   });
 }
 wirePP('pp-log','log','sl-log','theta',animLog);
-wirePP('pp-schur','schur','sl-schur','rho',animSchur);
+wirePP('pp-schur','schur','sl-schur','aniso',animSchur);
 wirePP('pp-jac','jac','sl-jac-theta','theta',animJac);
 wirePP('pp-tdf','tdf','sl-tdf','nu',animTdf);
 
@@ -979,7 +972,7 @@ wirePP('pp-tdf','tdf','sl-tdf','nu',animTdf);
 
 // slider input
 document.getElementById('sl-log').addEventListener('input',e=>{S.log.theta=+e.target.value;renderFig(figs.log);});
-document.getElementById('sl-schur').addEventListener('input',e=>{S.schur.rho=+e.target.value;renderFig(figs.schur);});
+document.getElementById('sl-schur').addEventListener('input',e=>{S.schur.aniso=+e.target.value;renderFig(figs.schur);});
 document.getElementById('sl-jac-theta').addEventListener('input',e=>{S.jac.theta=+e.target.value;renderFig(figs.jac);});
 document.getElementById('sl-couple-theta').addEventListener('input',e=>{S.couple.theta=+e.target.value;renderFig(figs.couple);});
 document.getElementById('sl-couple-rz').addEventListener('input',e=>{S.couple.rz=+e.target.value;renderFig(figs.couple);});
